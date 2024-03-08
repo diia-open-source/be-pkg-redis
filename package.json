@@ -1,0 +1,91 @@
+{
+    "name": "@diia-inhouse/redis",
+    "version": "2.4.0",
+    "description": "Redis services - redlock, pubsub, cache and store",
+    "main": "dist/index.js",
+    "types": "dist/types/index.d.ts",
+    "repository": "https://github.com/diia-open-source/be-pkg-redis.git",
+    "author": "Diia",
+    "license": "SEE LICENCE IN LICENCE.md",
+    "files": [
+        "dist"
+    ],
+    "engines": {
+        "node": ">=18"
+    },
+    "scripts": {
+        "prebuild": "rimraf dist",
+        "build": "tsc",
+        "semantic-release": "semantic-release",
+        "start": "npm run build && node dist/index.js",
+        "lint": "eslint --ext .ts . && prettier --check .",
+        "lint-fix": "eslint '*/**/*.{js,ts}' --fix && prettier --write .",
+        "lint:lockfile": "lockfile-lint --path package-lock.json --allowed-hosts registry.npmjs.org --validate-https",
+        "prepare": "npm run build",
+        "test": "jest",
+        "test:coverage": "jest --coverage",
+        "test:unit": "npm run test --selectProjects unit --",
+        "test:integration": "npm run test --selectProjects integration --",
+        "find-circulars": "madge --circular --extensions ts ./"
+    },
+    "resolutions": {
+        "@babel/traverse": "7.23.2"
+    },
+    "dependencies": {
+        "ioredis": "5.3.2",
+        "redis-semaphore": "5.5.0"
+    },
+    "peerDependencies": {
+        "@diia-inhouse/env": ">=1.2.0",
+        "@diia-inhouse/errors": ">=1.4.2",
+        "@diia-inhouse/types": ">=3.50.0",
+        "@diia-inhouse/utils": ">=2.22.1",
+        "@diia-inhouse/validators": ">=1.6.1"
+    },
+    "devDependencies": {
+        "@diia-inhouse/configs": "1.26.3",
+        "@diia-inhouse/crypto": "1.7.0",
+        "@diia-inhouse/diia-logger": "2.10.0",
+        "@diia-inhouse/env": "1.4.0",
+        "@diia-inhouse/errors": "1.6.1",
+        "@diia-inhouse/eslint-config": "3.4.0",
+        "@diia-inhouse/test": "5.1.0",
+        "@diia-inhouse/types": "4.25.0",
+        "@diia-inhouse/utils": "2.33.1",
+        "@diia-inhouse/validators": "1.12.1",
+        "@types/node": "20.8.6",
+        "protobufjs": "7.2.5"
+    },
+    "release": {
+        "extends": "@diia-inhouse/configs/dist/semantic-release/package",
+        "branches": [
+            "main"
+        ]
+    },
+    "commitlint": {
+        "extends": "@diia-inhouse/configs/dist/commitlint"
+    },
+    "eslintConfig": {
+        "extends": "@diia-inhouse/eslint-config",
+        "overrides": [
+            {
+                "files": [
+                    "*.ts"
+                ],
+                "parserOptions": {
+                    "project": [
+                        "./tsconfig.json",
+                        "./tests/tsconfig.json"
+                    ]
+                }
+            }
+        ]
+    },
+    "jest": {
+        "preset": "@diia-inhouse/configs/dist/jest"
+    },
+    "prettier": "@diia-inhouse/eslint-config/prettier",
+    "madge": {
+        "tsConfig": "./tsconfig.json"
+    }
+}

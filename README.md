@@ -26,7 +26,7 @@ This repository contains the package with redis services - redlock, pubsub, cach
 Example:
 
 ```
-git clone https://github.com/diia-open-source/pkg-redis.git
+git clone https://github.com/diia-open-source/be-pkg-redis.git pkg-redis
 ```
 
 ---

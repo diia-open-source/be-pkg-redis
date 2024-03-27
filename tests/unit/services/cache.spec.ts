@@ -49,7 +49,7 @@ const EnvServiceMock = mockClass(EnvService)
 
 describe('CacheService', () => {
     const logger = new LoggerMock()
-    const envService = new EnvServiceMock()
+    const envService = new EnvServiceMock(logger)
     const cacheService = new CacheService(config, envService, logger)
 
     describe('method: `get`', () => {

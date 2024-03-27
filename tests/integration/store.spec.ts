@@ -4,14 +4,30 @@ import DiiaLogger from '@diia-inhouse/diia-logger'
 import { ServiceUnavailableError } from '@diia-inhouse/errors'
 
 import { StoreService, StoreTag } from '../../src/index'
+import RedisMemoryServer from 'redis-memory-server'
 
 let store: StoreService
 
 describe(`${StoreService.name} service`, () => {
+    const redisServer = new RedisMemoryServer({ autoStart: false })
+
+    beforeAll(async () => {
+        await redisServer.start()
+    })
+    afterAll(async () => {
+        await redisServer.stop()
+    })
+
     beforeEach(async () => {
         const logger = new DiiaLogger()
 
-        store = new StoreService({ readWrite: { port: 6379 }, readOnly: { port: 6379 } }, logger)
+        store = new StoreService(
+            {
+                readWrite: { port: await redisServer.getPort(), host: await redisServer.getHost() },
+                readOnly: { port: await redisServer.getPort(), host: await redisServer.getHost() },
+            },
+            logger,
+        )
     })
 
     const key = 'key'

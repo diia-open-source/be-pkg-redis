@@ -1,5 +1,7 @@
 import { RedisOptions } from 'ioredis'
 
+export { RedisOptions } from 'ioredis'
+
 export enum RedisStatusValue {
     Ready = 'ready',
 }

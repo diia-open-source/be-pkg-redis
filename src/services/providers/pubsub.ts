@@ -11,6 +11,8 @@ export class PubSubProvider implements PubSubServiceProvider {
 
     private sub: Redis
 
+    private readonly oneTimeHandlerByChannel: Record<string, MessageHandler> = {}
+
     private readonly handlerByChannel: Record<string, MessageHandler> = {}
 
     constructor(
@@ -38,24 +40,40 @@ export class PubSubProvider implements PubSubServiceProvider {
         })
 
         this.sub.on('message', async (channel: string, message: string) => {
-            const handler = this.handlerByChannel[channel]
-            if (!handler) {
-                return this.logger.error(`Could not find a message handler for the channel ${channel}`)
+            const oneTimeHandler = this.oneTimeHandlerByChannel[channel]
+
+            if (oneTimeHandler) {
+                delete this.oneTimeHandlerByChannel[channel]
+
+                await this.sub.unsubscribe(channel)
+
+                try {
+                    await oneTimeHandler(message)
+                } catch (err) {
+                    this.logger.error(`Failed to handle message from the channel ${channel}`, { err })
+                }
+
+                return
             }
 
-            delete this.handlerByChannel[channel]
+            const handlerByChannel = this.handlerByChannel[channel]
 
-            await this.sub.unsubscribe(channel)
+            if (handlerByChannel) {
+                try {
+                    await handlerByChannel(message)
+                } catch (err) {
+                    this.logger.error(`Failed to handle message from the channel ${channel}`, { err })
+                }
 
-            try {
-                await handler(message)
-            } catch (err) {
-                this.logger.error(`Failed to handle message from the channel ${channel}`, { err })
+                return
             }
+
+            this.logger.error(`Could not find a message handler for the channel ${channel}`)
         })
     }
 
     async unsubscribe(channel: string): Promise<unknown> {
+        delete this.oneTimeHandlerByChannel[channel]
         delete this.handlerByChannel[channel]
 
         return await this.sub.unsubscribe(channel)
@@ -65,13 +83,26 @@ export class PubSubProvider implements PubSubServiceProvider {
         return await this.pub.publish(channel, JSON.stringify(data))
     }
 
-    async onceChannelMessage(channel: string, handler: MessageHandler): Promise<void> {
+    async onChannelMessage(channel: string, handler: MessageHandler): Promise<void> {
         if (Object.keys(this.handlerByChannel).includes(channel)) {
             throw new Error(`Handler already exists by the provided channel ${channel}`)
         }
 
         this.handlerByChannel[channel] = handler
         await this.sub.subscribe(channel)
+    }
+
+    async onceChannelMessage(channel: string, handler: MessageHandler): Promise<void> {
+        if (Object.keys(this.oneTimeHandlerByChannel).includes(channel)) {
+            throw new Error(`Handler already exists by the provided channel ${channel}`)
+        }
+
+        this.oneTimeHandlerByChannel[channel] = handler
+        await this.sub.subscribe(channel)
+    }
+
+    async quit(): Promise<void> {
+        await Promise.all([this.pub.quit(), this.sub.quit()])
     }
 
     getStatus(): PubSubStatus {

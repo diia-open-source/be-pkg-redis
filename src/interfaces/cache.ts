@@ -9,6 +9,7 @@ export interface CacheProvider {
     getByKeys(keys: string[]): Promise<(null | string)[]>
     remove(...key: string[]): Promise<number>
     getStatus(): CacheStatus
+    quit(): Promise<void>
 }
 
-export type CacheStatusResult = { redis: CacheStatus }
+export type CacheStatusResult = { cache: CacheStatus }

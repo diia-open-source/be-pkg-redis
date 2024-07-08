@@ -1,7 +1,9 @@
+/* eslint-disable unicorn/consistent-function-scoping */
 const pubSubProviderMock = {
     unsubscribe: jest.fn(),
     publish: jest.fn(),
     onceChannelMessage: jest.fn(),
+    onChannelMessage: jest.fn(),
     getStatus: jest.fn(),
 }
 
@@ -16,6 +18,10 @@ class PubSubProviderMock {
 
     onceChannelMessage(...args: unknown[]): unknown {
         return pubSubProviderMock.onceChannelMessage(...args)
+    }
+
+    onChannelMessage(...args: unknown[]): unknown {
+        return pubSubProviderMock.onChannelMessage(...args)
     }
 
     getStatus(...args: unknown[]): unknown {
@@ -61,6 +67,18 @@ describe('PubSubService', () => {
         })
     })
 
+    describe('method: `onChannelMessage`', () => {
+        it('should successfully publish message', async () => {
+            const channel = generateUuid()
+            const handler = async (): Promise<void> => {}
+
+            pubSubProviderMock.onChannelMessage.mockResolvedValue(true)
+
+            expect(await pubSubService.onChannelMessage(channel, handler)).toBe(true)
+            expect(pubSubProviderMock.onChannelMessage).toHaveBeenCalledWith(channel, handler)
+        })
+    })
+
     describe('method: `onceChannelMessage`', () => {
         it('should successfully publish message', async () => {
             const channel = generateUuid()
@@ -79,18 +97,18 @@ describe('PubSubService', () => {
                 'OK',
                 {
                     status: HttpStatusCode.OK,
-                    details: { redis: <PubSubStatus>{ pub: RedisStatusValue.Ready, sub: RedisStatusValue.Ready } },
+                    details: { pubsub: <PubSubStatus>{ pub: RedisStatusValue.Ready, sub: RedisStatusValue.Ready } },
                 },
             ],
             [
                 'SERVICE UNAVAILABLE',
                 {
                     status: HttpStatusCode.SERVICE_UNAVAILABLE,
-                    details: { redis: <PubSubStatus>{ pub: <RedisStatusValue>'connecting', sub: RedisStatusValue.Ready } },
+                    details: { pubsub: <PubSubStatus>{ pub: <RedisStatusValue>'connecting', sub: RedisStatusValue.Ready } },
                 },
             ],
         ])('should return `%s` status', async (_httpStatus, expectedStatus) => {
-            pubSubProviderMock.getStatus.mockReturnValue(expectedStatus.details.redis)
+            pubSubProviderMock.getStatus.mockReturnValue(expectedStatus.details.pubsub)
 
             expect(await pubSubService.onHealthCheck()).toEqual(expectedStatus)
         })

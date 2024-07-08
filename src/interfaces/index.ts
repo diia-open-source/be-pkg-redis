@@ -1,5 +1,3 @@
-export * from './deps'
-
 export * from './cache'
 
 export * from './pubsub'

@@ -37,19 +37,16 @@ jest.mock('@services/providers/cache', () => ({ RedisCacheProvider: RedisCachePr
 
 import Logger from '@diia-inhouse/diia-logger'
 import { EnvService } from '@diia-inhouse/env'
-import { mockClass } from '@diia-inhouse/test'
+import { mockInstance } from '@diia-inhouse/test'
 import { HttpStatusCode } from '@diia-inhouse/types'
 
 import { CacheService, CacheStatus, RedisStatusValue } from '../../../src/index'
 import { generateUuid } from '../../mocks/randomData'
 import { config } from '../../mocks/services/cache'
 
-const LoggerMock = mockClass(Logger)
-const EnvServiceMock = mockClass(EnvService)
-
 describe('CacheService', () => {
-    const logger = new LoggerMock()
-    const envService = new EnvServiceMock()
+    const logger = mockInstance(Logger)
+    const envService = mockInstance(EnvService)
     const cacheService = new CacheService(config, envService, logger)
 
     describe('method: `get`', () => {
@@ -165,18 +162,18 @@ describe('CacheService', () => {
                 'OK',
                 {
                     status: HttpStatusCode.OK,
-                    details: { redis: <CacheStatus>{ readOnly: RedisStatusValue.Ready, readWrite: RedisStatusValue.Ready } },
+                    details: { cache: <CacheStatus>{ readOnly: RedisStatusValue.Ready, readWrite: RedisStatusValue.Ready } },
                 },
             ],
             [
                 'SERVICE UNAVAILABLE',
                 {
                     status: HttpStatusCode.SERVICE_UNAVAILABLE,
-                    details: { redis: <CacheStatus>{ readOnly: <RedisStatusValue>'connecting', readWrite: RedisStatusValue.Ready } },
+                    details: { cache: <CacheStatus>{ readOnly: <RedisStatusValue>'connecting', readWrite: RedisStatusValue.Ready } },
                 },
             ],
         ])('should return `%s` status', async (_httpStatus, expectedStatus) => {
-            redisCacheProviderMock.getStatus.mockReturnValue(expectedStatus.details.redis)
+            redisCacheProviderMock.getStatus.mockReturnValue(expectedStatus.details.cache)
 
             expect(await cacheService.onHealthCheck()).toEqual(expectedStatus)
         })

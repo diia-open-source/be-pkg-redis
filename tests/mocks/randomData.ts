@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from 'crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 
 export function generateUuid(): string {
     return randomUUID()

@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/consistent-function-scoping */
 /* eslint-disable jest/no-conditional-in-test */
 const redisClientSubMock = {
     on: jest.fn(),
@@ -14,8 +15,8 @@ const redisClientPubMock = {
 
 const createClient = jest.fn()
 
-class RedisServiceMock {
-    static createClient = createClient
+const RedisServiceMock = {
+    createClient: createClient,
 }
 
 jest.mock('@services/redis', () => ({ RedisService: RedisServiceMock }))

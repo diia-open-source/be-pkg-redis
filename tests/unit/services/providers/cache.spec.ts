@@ -16,8 +16,8 @@ const redisClientRwMock = {
 
 const createClient = jest.fn()
 
-class RedisServiceMock {
-    static createClient = createClient
+const RedisServiceMock = {
+    createClient: createClient,
 }
 
 jest.mock('@services/redis', () => ({ RedisService: RedisServiceMock }))

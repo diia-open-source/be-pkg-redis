@@ -5,7 +5,7 @@ export interface PubSubStatus {
     sub: RedisStatus
 }
 
-export type PubSubStatusResult = { redis: PubSubStatus }
+export type PubSubStatusResult = { pubsub: PubSubStatus }
 
 export type MessageHandler = (message: string) => Promise<unknown>
 

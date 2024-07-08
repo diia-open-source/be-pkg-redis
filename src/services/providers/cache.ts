@@ -41,7 +41,7 @@ export class RedisCacheProvider implements CacheProvider {
     }
 
     async set(key: RedisKey, data: RedisValue, expiration: number): Promise<string> {
-        const result: string = await this.clientRW.set(key, data)
+        const result = await this.clientRW.set(key, data)
         if (expiration !== -1) {
             await this.clientRW.expire(key, expiration)
         }
@@ -59,6 +59,10 @@ export class RedisCacheProvider implements CacheProvider {
 
     async remove(...key: string[]): Promise<number> {
         return await this.clientRW.del(...key)
+    }
+
+    async quit(): Promise<void> {
+        await Promise.all([this.clientRW.quit(), this.clientRO.quit()])
     }
 
     getStatus(): CacheStatus {

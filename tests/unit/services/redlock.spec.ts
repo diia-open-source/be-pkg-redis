@@ -7,8 +7,8 @@ const redisClientRwMock = {
     on: jest.fn(),
 }
 
-class RedisServiceMock {
-    static createClient = jest.fn()
+const RedisServiceMock = {
+    createClient: jest.fn(),
 }
 
 class RedlockMutexMock {

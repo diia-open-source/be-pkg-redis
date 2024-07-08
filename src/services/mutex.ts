@@ -1,13 +1,14 @@
 import Redis from 'ioredis'
 import { RedlockMutex } from 'redis-semaphore'
 
-import { Logger } from '@diia-inhouse/types'
+import { HealthCheckResult, HttpStatusCode, Logger, OnDestroy, OnHealthCheck } from '@diia-inhouse/types'
 
-import { RedisConfig } from '../interfaces/redis'
+import { MutexStatusResult } from '../interfaces'
+import { RedisConfig, RedisStatusValue } from '../interfaces/redis'
 
 import { RedisService } from './redis'
 
-export class RedlockService {
+export class RedlockService implements OnHealthCheck, OnDestroy {
     private clientRW: Redis
 
     constructor(
@@ -27,6 +28,20 @@ export class RedlockService {
             this.logger.info('Redis REDLOCK READ-WRITE connection error ', { err })
             this.logger.info(`Redis Path ${JSON.stringify(readWrite.sentinels)}`)
         })
+    }
+
+    async onHealthCheck(): Promise<HealthCheckResult<MutexStatusResult>> {
+        const cacheStatus = this.clientRW.status
+        const status = cacheStatus === RedisStatusValue.Ready ? HttpStatusCode.OK : HttpStatusCode.SERVICE_UNAVAILABLE
+
+        return {
+            status,
+            details: { mutex: cacheStatus },
+        }
+    }
+
+    async onDestroy(): Promise<void> {
+        await this.clientRW.quit()
     }
 
     async lock(resource: string, ttl = 60000): Promise<RedlockMutex> {

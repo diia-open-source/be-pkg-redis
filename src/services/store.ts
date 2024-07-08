@@ -1,14 +1,14 @@
 import Redis from 'ioredis'
 
 import { ServiceUnavailableError } from '@diia-inhouse/errors'
-import { HealthCheckResult, HttpStatusCode, Logger, OnHealthCheck } from '@diia-inhouse/types'
+import { HealthCheckResult, HttpStatusCode, Logger, OnDestroy, OnHealthCheck } from '@diia-inhouse/types'
 
 import { CacheStatus, RedisConfig, RedisStatusValue } from '../interfaces/redis'
 import { SetValueOptions, StoreStatusResult, StoreTag, TaggedStoreValue, TagsConfig } from '../interfaces/store'
 
 import { RedisService } from './redis'
 
-export class StoreService implements OnHealthCheck {
+export class StoreService implements OnHealthCheck, OnDestroy {
     private clientRW: Redis
 
     private clientRO: Redis
@@ -42,6 +42,26 @@ export class StoreService implements OnHealthCheck {
             this.logger.info('Store READ-ONLY connection error ', { err })
             this.logger.info(`Store Path ${JSON.stringify(readOnly.sentinels)}`)
         })
+    }
+
+    async onHealthCheck(): Promise<HealthCheckResult<StoreStatusResult>> {
+        const storeStatus: CacheStatus = {
+            readWrite: this.clientRW.status,
+            readOnly: this.clientRO.status,
+        }
+
+        const status: HttpStatusCode = Object.values(storeStatus).some((s) => s !== RedisStatusValue.Ready)
+            ? HttpStatusCode.SERVICE_UNAVAILABLE
+            : HttpStatusCode.OK
+
+        return {
+            status,
+            details: { store: storeStatus },
+        }
+    }
+
+    async onDestroy(): Promise<void> {
+        await Promise.all([this.clientRW.quit(), this.clientRO.quit()])
     }
 
     async get(key: string): Promise<string | null> {
@@ -114,28 +134,14 @@ export class StoreService implements OnHealthCheck {
         return await this.clientRW.del(...keys)
     }
 
-    async onHealthCheck(): Promise<HealthCheckResult<StoreStatusResult>> {
-        const storeStatus: CacheStatus = {
-            readWrite: this.clientRW.status,
-            readOnly: this.clientRO.status,
-        }
-
-        const status: HttpStatusCode = Object.values(storeStatus).some((s) => s !== RedisStatusValue.Ready)
-            ? HttpStatusCode.SERVICE_UNAVAILABLE
-            : HttpStatusCode.OK
-
-        return {
-            status,
-            details: { store: storeStatus },
-        }
-    }
-
     async bumpTags(tags: StoreTag[]): Promise<'OK' | null> {
         const tagsValue = await this.clientRO.get(this.tagsKey)
         const tagsConfig: TagsConfig = tagsValue ? JSON.parse(tagsValue) : {}
         const timestamp: number = Date.now()
 
-        tags.forEach((tagKey) => (tagsConfig[tagKey] = timestamp))
+        for (const tagKey of tags) {
+            tagsConfig[tagKey] = timestamp
+        }
 
         return await this.clientRW.set(this.tagsKey, JSON.stringify(tagsConfig))
     }
@@ -160,7 +166,7 @@ export class StoreService implements OnHealthCheck {
             .filter(([tag]) => tags.includes(<StoreTag>tag))
             .map(([, tagTimestamp]) => tagTimestamp)
 
-        const timestamp: number = tagTimestamps.length ? Math.max(...tagTimestamps) : 0
+        const timestamp: number = tagTimestamps.length > 0 ? Math.max(...tagTimestamps) : 0
 
         const wrappedValue: TaggedStoreValue = { data, tags, timestamp }
 

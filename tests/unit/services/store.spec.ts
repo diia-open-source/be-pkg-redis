@@ -147,7 +147,7 @@ describe('StoreService', () => {
             }).rejects.toEqual(expectedError)
             expect(redisClientRoMock.mget).toHaveBeenCalledWith(key, '_tags')
             expect(logger.error).toHaveBeenCalledWith('Failed when parse value with tags', {
-                err: new SyntaxError('Unexpected token i in JSON at position 0'),
+                err: new SyntaxError(`Unexpected token 'i', "invalid-json-string" is not valid JSON`),
             })
         })
     })

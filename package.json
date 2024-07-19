@@ -1,6 +1,6 @@
 {
     "name": "@diia-inhouse/redis",
-    "version": "2.13.0",
+    "version": "2.13.1",
     "description": "Redis services - redlock, pubsub, cache and store",
     "main": "dist/index.js",
     "types": "dist/types/index.d.ts",

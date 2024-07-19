@@ -1,6 +1,6 @@
 {
     "name": "@diia-inhouse/redis",
-    "version": "2.12.0",
+    "version": "2.13.0",
     "description": "Redis services - redlock, pubsub, cache and store",
     "main": "dist/index.js",
     "types": "dist/types/index.d.ts",
@@ -33,7 +33,7 @@
     },
     "dependencies": {
         "ioredis": "5.4.1",
-        "redis-semaphore": "5.5.1"
+        "redis-semaphore": "5.6.0"
     },
     "peerDependencies": {
         "@diia-inhouse/env": ">=1.2.0",
@@ -42,22 +42,22 @@
         "@diia-inhouse/validators": ">=1.6.1"
     },
     "devDependencies": {
-        "@diia-inhouse/configs": "1.31.1",
-        "@diia-inhouse/diia-logger": "2.15.0",
+        "@diia-inhouse/configs": "1.32.0",
+        "@diia-inhouse/diia-logger": "3.3.0",
         "@diia-inhouse/env": "1.16.0",
-        "@diia-inhouse/errors": "1.9.0",
+        "@diia-inhouse/errors": "1.10.0",
         "@diia-inhouse/eslint-config": "5.1.0",
-        "@diia-inhouse/test": "6.3.0",
-        "@diia-inhouse/types": "6.24.0",
+        "@diia-inhouse/test": "6.4.0",
+        "@diia-inhouse/types": "6.34.1",
         "@diia-inhouse/validators": "1.17.0",
-        "@types/node": "20.12.10",
+        "@types/node": "20.14.9",
         "eslint": "8.57.0",
         "eslint-plugin-prettier": "5.1.3",
-        "lockfile-lint": "4.13.2",
+        "lockfile-lint": "4.14.0",
         "madge": "7.0.0",
-        "prettier": "3.2.5",
+        "prettier": "3.3.2",
         "protobufjs": "7.2.5",
-        "rimraf": "5.0.5",
+        "rimraf": "5.0.7",
         "semantic-release": "21.1.2",
         "typescript": "5.4.5"
     },

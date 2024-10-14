@@ -135,8 +135,8 @@ describe('RedisCacheProvider', () => {
             const redisCacheProvider = new RedisCacheProvider(config, logger)
 
             expect(redisCacheProvider.getStatus()).toEqual({ readWrite: 'ready', readOnly: 'ready' })
-            expect(logger.info).toHaveBeenCalledWith(`Redis READ-WRITE connection open to ${JSON.stringify(config.readWrite.sentinels)}`)
-            expect(logger.info).toHaveBeenCalledWith(`Redis READ-ONLY connection open to ${JSON.stringify(config.readOnly.sentinels)}`)
+            expect(logger.info).toHaveBeenCalledWith('Redis READ-WRITE connection open', { sentinels: config.readWrite.sentinels })
+            expect(logger.info).toHaveBeenCalledWith('Redis READ-ONLY connection open', { sentinels: config.readOnly.sentinels })
         })
     })
 })

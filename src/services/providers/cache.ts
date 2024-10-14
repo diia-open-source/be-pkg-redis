@@ -20,7 +20,9 @@ export class RedisCacheProvider implements CacheProvider {
         this.clientRO = RedisService.createClient(readOnly)
 
         this.clientRW.on('connect', () => {
-            this.logger.info(`Redis READ-WRITE connection open to ${JSON.stringify(readWrite.sentinels)}`)
+            const { host, port, sentinels } = readWrite
+
+            this.logger.info('Redis READ-WRITE connection open', { host, port, sentinels })
         })
 
         this.clientRW.on('error', (err: Error) => {
@@ -28,7 +30,9 @@ export class RedisCacheProvider implements CacheProvider {
         })
 
         this.clientRO.on('connect', () => {
-            this.logger.info(`Redis READ-ONLY connection open to ${JSON.stringify(readOnly.sentinels)}`)
+            const { host, port, sentinels } = readOnly
+
+            this.logger.info('Redis READ-ONLY connection open', { host, port, sentinels })
         })
 
         this.clientRO.on('error', (err: Error) => {

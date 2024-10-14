@@ -21,12 +21,13 @@ export class RedlockService implements OnHealthCheck, OnDestroy {
         this.clientRW = RedisService.createClient(readWrite)
 
         this.clientRW.on('connect', () => {
-            this.logger.info(`Redis REDLOCK READ-WRITE connection open to ${JSON.stringify(readWrite.sentinels)}`)
+            const { host, port, sentinels } = readWrite
+
+            this.logger.info('Redis REDLOCK READ-WRITE connection open', { host, port, sentinels })
         })
 
         this.clientRW.on('error', (err: Error) => {
-            this.logger.info('Redis REDLOCK READ-WRITE connection error ', { err })
-            this.logger.info(`Redis Path ${JSON.stringify(readWrite.sentinels)}`)
+            this.logger.error('Redis REDLOCK READ-WRITE connection error ', { err })
         })
     }
 

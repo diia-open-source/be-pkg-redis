@@ -51,11 +51,8 @@ describe('RedlockService', () => {
 
             new RedlockService(config, logger)
 
-            expect(logger.info).toHaveBeenCalledWith(
-                `Redis REDLOCK READ-WRITE connection open to ${JSON.stringify(config.readWrite.sentinels)}`,
-            )
-            expect(logger.info).toHaveBeenCalledWith('Redis REDLOCK READ-WRITE connection error ', { err: expectedRedisError })
-            expect(logger.info).toHaveBeenCalledWith(`Redis Path ${JSON.stringify(config.readWrite.sentinels)}`)
+            expect(logger.info).toHaveBeenCalledWith('Redis REDLOCK READ-WRITE connection open', { sentinels: config.readWrite.sentinels })
+            expect(logger.error).toHaveBeenCalledWith('Redis REDLOCK READ-WRITE connection error ', { err: expectedRedisError })
         })
     })
 

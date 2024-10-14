@@ -3,6 +3,13 @@ const redisClientRoMock = {
     get: jest.fn(),
     keys: jest.fn(),
     mget: jest.fn(),
+    hget: jest.fn(),
+    hvals: jest.fn(),
+    hscan: jest.fn(),
+    scan: jest.fn(),
+    hgetall: jest.fn(),
+    hlen: jest.fn(),
+    lrange: jest.fn(),
     pttl: jest.fn(),
     status: 'ready',
 }
@@ -10,9 +17,13 @@ const redisClientRoMock = {
 const redisClientRwMock = {
     on: jest.fn(),
     set: jest.fn(),
+    hset: jest.fn(),
+    lpush: jest.fn(),
     expire: jest.fn(),
+    incrby: jest.fn(),
     pexpire: jest.fn(),
     del: jest.fn(),
+    hdel: jest.fn(),
     flushdb: jest.fn(),
     status: 'ready',
 }
@@ -28,7 +39,7 @@ import { ServiceUnavailableError } from '@diia-inhouse/errors'
 import { mockClass } from '@diia-inhouse/test'
 import { HttpStatusCode } from '@diia-inhouse/types'
 
-import { CacheStatus, SetValueOptions, StoreService, StoreTag, TaggedStoreValue, TagsConfig } from '../../../src/index'
+import { CacheStatus, SetValueOptions, StoreService, TaggedStoreValue, TagsConfig } from '../../../src/index'
 import { generateUuid } from '../../mocks/randomData'
 import { config } from '../../mocks/services/store'
 
@@ -94,6 +105,127 @@ describe('StoreService', () => {
         })
     })
 
+    describe('method: `hget`', () => {
+        it('should successfully get value from hash in store', async () => {
+            const key = generateUuid()
+            const field = 'field'
+            const expectedValue = 'value'
+
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            redisClientRoMock.hget.mockResolvedValue(expectedValue)
+
+            const storeService = new StoreService(config, logger)
+
+            expect(await storeService.hget(key, field)).toEqual(expectedValue)
+            expect(redisClientRoMock.hget).toHaveBeenCalledWith(key, field)
+        })
+    })
+
+    describe('method: `hgetall`', () => {
+        it('should successfully get all keys, values from hash in store', async () => {
+            const key = generateUuid()
+            const expectedValue = { '1': 'value', '2': 'value' }
+
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            redisClientRoMock.hgetall.mockResolvedValue(expectedValue)
+
+            const storeService = new StoreService(config, logger)
+
+            expect(await storeService.hgetall(key)).toEqual(expectedValue)
+            expect(redisClientRoMock.hgetall).toHaveBeenCalledWith(key)
+        })
+    })
+
+    describe('method: `hvals`', () => {
+        it('should successfully get all values from hash in store', async () => {
+            const key = generateUuid()
+            const expectedValue = ['value', 'value2']
+
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            redisClientRoMock.hvals.mockResolvedValue(expectedValue)
+
+            const storeService = new StoreService(config, logger)
+
+            expect(await storeService.hvals(key)).toEqual(expectedValue)
+            expect(redisClientRoMock.hvals).toHaveBeenCalledWith(key)
+        })
+    })
+
+    describe('method: `hscan`', () => {
+        it('should successfully get fist batch of scanned values in a hash', async () => {
+            const key = generateUuid()
+            const count = 100
+            const cursor = 0
+            const expectedValue = { cursor, elements: ['1', '2'] }
+            const mockedValue = [cursor, ['1', '2']]
+
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            redisClientRoMock.hscan.mockResolvedValue(mockedValue)
+
+            const storeService = new StoreService(config, logger)
+
+            expect(await storeService.hscan(key, cursor, count)).toEqual(expectedValue)
+            expect(redisClientRoMock.hscan).toHaveBeenCalledWith(key, cursor, 'COUNT', count)
+        })
+    })
+
+    describe('method: `scan`', () => {
+        it('should successfully get fist batch of scanned values', async () => {
+            const match = `${generateUuid()}_*`
+            const count = 100
+            const cursor = 0
+            const expectedValue = { cursor, elements: ['1', '2'] }
+            const mockedValue = [cursor, ['1', '2']]
+
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            redisClientRoMock.scan.mockResolvedValue(mockedValue)
+
+            const storeService = new StoreService(config, logger)
+
+            expect(await storeService.scan(match, cursor, count)).toEqual(expectedValue)
+            expect(redisClientRoMock.scan).toHaveBeenCalledWith(cursor, 'MATCH', match, 'COUNT', count)
+        })
+    })
+
+    describe('method: `hlen`', () => {
+        it('should successfully get length of list from store', async () => {
+            const key = generateUuid()
+            const expectedValue = 1
+
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            redisClientRoMock.hlen.mockResolvedValue(expectedValue)
+
+            const storeService = new StoreService(config, logger)
+
+            expect(await storeService.hlen(key)).toEqual(expectedValue)
+            expect(redisClientRoMock.hlen).toHaveBeenCalledWith(key)
+        })
+    })
+
+    describe('method: `lrange`', () => {
+        it('should successfully get values from list in store', async () => {
+            const key = generateUuid()
+            const start = 0
+            const stop = -1
+            const expectedValue = ['1', '2']
+
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            redisClientRoMock.lrange.mockResolvedValue(expectedValue)
+
+            const storeService = new StoreService(config, logger)
+
+            expect(await storeService.lrange(key, start, stop)).toEqual(expectedValue)
+            expect(redisClientRoMock.lrange).toHaveBeenCalledWith(key, start, stop)
+        })
+    })
+
     describe('method: `getUsingTags`', () => {
         it.each([
             ['cached value is null', generateUuid(), null, null, null],
@@ -107,14 +239,14 @@ describe('StoreService', () => {
             [
                 'invalid tags',
                 generateUuid(),
-                JSON.stringify(<TaggedStoreValue>{ data: 'value', tags: [StoreTag.PublicService], timestamp: 1800 }),
+                JSON.stringify(<TaggedStoreValue>{ data: 'value', tags: ['publicService'], timestamp: 1800 }),
                 JSON.stringify(<TagsConfig>{ publicService: 1900 }),
                 null,
             ],
             [
                 'valid tags',
                 generateUuid(),
-                JSON.stringify(<TaggedStoreValue>{ data: 'value', tags: [StoreTag.PublicService], timestamp: 1800 }),
+                JSON.stringify(<TaggedStoreValue>{ data: 'value', tags: ['publicService'], timestamp: 1800 }),
                 JSON.stringify(<TagsConfig>{ publicService: 1800 }),
                 'value',
             ],
@@ -167,11 +299,59 @@ describe('StoreService', () => {
         })
     })
 
+    describe('method: `hdel`', () => {
+        it('should successfully remove field from hash in store', async () => {
+            const key = generateUuid()
+            const field = 'field'
+
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            redisClientRwMock.hdel.mockResolvedValue(1)
+
+            const storeService = new StoreService(config, logger)
+
+            expect(await storeService.hdel(key, field)).toBe(1)
+            expect(redisClientRwMock.hdel).toHaveBeenCalledWith(key, field)
+        })
+    })
+
+    describe('method: `incrby`', () => {
+        it('should successfully increment field for value', async () => {
+            const key = generateUuid()
+            const value = 100
+
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            redisClientRwMock.incrby.mockResolvedValue(value)
+
+            const storeService = new StoreService(config, logger)
+
+            expect(await storeService.incrby(key, value)).toBe(value)
+            expect(redisClientRwMock.incrby).toHaveBeenCalledWith(key, value)
+        })
+    })
+
+    describe('method: `expire`', () => {
+        it('should set expiration for a key', async () => {
+            const key = generateUuid()
+            const seconds = 1
+
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            redisClientRwMock.expire.mockResolvedValue(1)
+
+            const storeService = new StoreService(config, logger)
+
+            expect(await storeService.expire(key, seconds)).toBe(1)
+            expect(redisClientRwMock.expire).toHaveBeenCalledWith(key, seconds, 'NX')
+        })
+    })
+
     describe('method: `set`', () => {
         it('should set value in store with provided ttl', async () => {
             const key = generateUuid()
             const value = 'value'
-            const options: SetValueOptions = { tags: [StoreTag.PublicService], ttl: 1800 }
+            const options: SetValueOptions = { tags: ['publicService'], ttl: 1800 }
 
             RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
             RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
@@ -184,7 +364,7 @@ describe('StoreService', () => {
             expect(redisClientRoMock.get).toHaveBeenCalledWith('_tags')
             expect(redisClientRwMock.set).toHaveBeenCalledWith(
                 key,
-                JSON.stringify({ data: value, tags: [StoreTag.PublicService], timestamp: 1800 }),
+                JSON.stringify({ data: value, tags: ['publicService'], timestamp: 1800 }),
                 'PX',
                 options.ttl,
             )
@@ -193,7 +373,7 @@ describe('StoreService', () => {
         it('should set value in store without ttl', async () => {
             const key = generateUuid()
             const value = 'value'
-            const options: SetValueOptions = { tags: [StoreTag.PublicService] }
+            const options: SetValueOptions = { tags: ['publicService'] }
 
             RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
             RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
@@ -204,10 +384,7 @@ describe('StoreService', () => {
 
             expect(await storeService.set(key, value, options)).toBe('OK')
             expect(redisClientRoMock.get).toHaveBeenCalledWith('_tags')
-            expect(redisClientRwMock.set).toHaveBeenCalledWith(
-                key,
-                JSON.stringify({ data: value, tags: [StoreTag.PublicService], timestamp: 0 }),
-            )
+            expect(redisClientRwMock.set).toHaveBeenCalledWith(key, JSON.stringify({ data: value, tags: ['publicService'], timestamp: 0 }))
         })
 
         it('should set value in store without any options', async () => {
@@ -222,6 +399,38 @@ describe('StoreService', () => {
 
             expect(await storeService.set(key, value)).toBe('OK')
             expect(redisClientRwMock.set).toHaveBeenCalledWith(key, value)
+        })
+    })
+
+    describe('method: `hset`', () => {
+        it('should set value in store', async () => {
+            const key = generateUuid()
+            const value = { '1': 'value' }
+
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            redisClientRwMock.hset.mockResolvedValue(1)
+
+            const storeService = new StoreService(config, logger)
+
+            expect(await storeService.hset(key, value)).toBe(1)
+            expect(redisClientRwMock.hset).toHaveBeenCalledWith(key, value)
+        })
+    })
+
+    describe('method: `lpush`', () => {
+        it('should push value to the list in store', async () => {
+            const key = generateUuid()
+            const value = 'value'
+
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
+            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            redisClientRwMock.lpush.mockResolvedValue(1)
+
+            const storeService = new StoreService(config, logger)
+
+            expect(await storeService.lpush(key, value)).toBe(1)
+            expect(redisClientRwMock.lpush).toHaveBeenCalledWith(key, value)
         })
     })
 
@@ -290,12 +499,12 @@ describe('StoreService', () => {
         it.each([
             [
                 'tags config exists in store',
-                JSON.stringify(<TagsConfig>{ [StoreTag.Faq]: now }),
-                JSON.stringify(<TagsConfig>{ [StoreTag.Faq]: now, [StoreTag.PublicService]: now }),
+                JSON.stringify(<TagsConfig>{ ['faq']: now }),
+                JSON.stringify(<TagsConfig>{ ['faq']: now, ['publicService']: now }),
             ],
-            ['tags does not exist in store', null, JSON.stringify(<TagsConfig>{ [StoreTag.PublicService]: now })],
+            ['tags does not exist in store', null, JSON.stringify(<TagsConfig>{ ['publicService']: now })],
         ])('should successfully bump tags when %s', async (_msg, tagsConfig: string | null, expectedTagsConfig: string) => {
-            const tags: StoreTag[] = [StoreTag.PublicService]
+            const tags: string[] = ['publicService']
 
             RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
             RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)

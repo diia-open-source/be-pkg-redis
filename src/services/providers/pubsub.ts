@@ -24,7 +24,9 @@ export class PubSubProvider implements PubSubServiceProvider {
         this.sub = RedisService.createClient({ ...readOnly, autoResubscribe: true })
 
         this.pub.on('connect', () => {
-            this.logger.info(`Redis READ-WRITE pub connection open to ${JSON.stringify(readWrite.sentinels)}`)
+            const { host, port, sentinels } = readWrite
+
+            this.logger.info('Redis READ-WRITE pub connection open', { host, port, sentinels })
         })
 
         this.pub.on('error', (err: Error) => {
@@ -32,7 +34,9 @@ export class PubSubProvider implements PubSubServiceProvider {
         })
 
         this.sub.on('connect', () => {
-            this.logger.info(`Redis READ-ONLY sub connection open to ${JSON.stringify(readOnly.sentinels)}`)
+            const { host, port, sentinels } = readOnly
+
+            this.logger.info('Redis READ-ONLY sub connection open', { host, port, sentinels })
         })
 
         this.sub.on('error', (err: Error) => {

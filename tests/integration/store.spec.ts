@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import DiiaLogger from '@diia-inhouse/diia-logger'
 import { ServiceUnavailableError } from '@diia-inhouse/errors'
 
-import { StoreService, StoreTag } from '../../src/index'
+import { StoreService } from '../../src/index'
 
 let store: StoreService
 
@@ -148,7 +148,7 @@ describe(`${StoreService.name} service`, () => {
         })
 
         it('gets tagged value without tag in cache', async () => {
-            await store.set(key, value, { tags: [StoreTag.PublicService] })
+            await store.set(key, value, { tags: ['publicService'] })
 
             // Act
             const res = await store.getUsingTags(key)
@@ -157,8 +157,8 @@ describe(`${StoreService.name} service`, () => {
         })
 
         it('gets tagged value when value is older than tag', async () => {
-            await store.bumpTags([StoreTag.PublicService])
-            await store.set(key, value, { tags: [StoreTag.PublicService] })
+            await store.bumpTags(['publicService'])
+            await store.set(key, value, { tags: ['publicService'] })
 
             // Act
             const res = await store.getUsingTags(key)
@@ -167,8 +167,8 @@ describe(`${StoreService.name} service`, () => {
         })
 
         it('key becomes invalid when at least one tag is bumped', async () => {
-            await store.set(key, value, { tags: [StoreTag.PublicService, StoreTag.PublicServiceCategory] })
-            await store.bumpTags([StoreTag.PublicService])
+            await store.set(key, value, { tags: ['publicService', 'publicServiceCategory'] })
+            await store.bumpTags(['publicService'])
 
             // Act
             const res = await store.getUsingTags(key)
@@ -180,11 +180,11 @@ describe(`${StoreService.name} service`, () => {
             const key1 = 'key1'
             const key2 = 'key2'
 
-            await store.set(key1, value, { tags: [StoreTag.PublicService] })
-            await store.set(key2, value, { tags: [StoreTag.PublicService] })
+            await store.set(key1, value, { tags: ['publicService'] })
+            await store.set(key2, value, { tags: ['publicService'] })
 
             // Act
-            await store.bumpTags([StoreTag.PublicService])
+            await store.bumpTags(['publicService'])
 
             expect(await store.getUsingTags(key1)).toBeNull()
             expect(await store.getUsingTags(key2)).toBeNull()

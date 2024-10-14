@@ -4,7 +4,7 @@ import { ServiceUnavailableError } from '@diia-inhouse/errors'
 import { HealthCheckResult, HttpStatusCode, Logger, OnDestroy, OnHealthCheck } from '@diia-inhouse/types'
 
 import { CacheStatus, RedisConfig, RedisStatusValue } from '../interfaces/redis'
-import { SetValueOptions, StoreStatusResult, StoreTag, TaggedStoreValue, TagsConfig } from '../interfaces/store'
+import { SetValueOptions, StoreStatusResult, TaggedStoreValue, TagsConfig } from '../interfaces/store'
 
 import { RedisService } from './redis'
 
@@ -72,6 +72,38 @@ export class StoreService implements OnHealthCheck, OnDestroy {
         return await this.clientRO.mget(keys)
     }
 
+    async hget(key: string, field: string): Promise<string | null> {
+        return await this.clientRO.hget(key, field)
+    }
+
+    async hlen(key: string): Promise<number | null> {
+        return await this.clientRO.hlen(key)
+    }
+
+    async hgetall(key: string): Promise<Record<string, string> | null> {
+        return await this.clientRO.hgetall(key)
+    }
+
+    async hvals(key: string): Promise<string[]> {
+        return await this.clientRO.hvals(key)
+    }
+
+    async hscan(key: string, cursor: number | string, count: number): Promise<{ cursor: string; elements: string[] }> {
+        const [newCursor, elements] = await this.clientRO.hscan(key, cursor, 'COUNT', count)
+
+        return { cursor: newCursor, elements }
+    }
+
+    async scan(matchPattern: string, cursor: number | string, count: number): Promise<{ cursor: string; elements: string[] }> {
+        const [newCursor, elements] = await this.clientRO.scan(cursor, 'MATCH', matchPattern, 'COUNT', count)
+
+        return { cursor: newCursor, elements }
+    }
+
+    async lrange(key: string, start: number, stop: number): Promise<string[] | null> {
+        return await this.clientRO.lrange(key, start, stop)
+    }
+
     async getUsingTags(key: string): Promise<string | null> {
         const [cachedValue, tagsValue] = await this.clientRO.mget(key, this.tagsKey)
         if (!cachedValue) {
@@ -113,6 +145,18 @@ export class StoreService implements OnHealthCheck, OnDestroy {
         return await this.clientRW.set(key, value)
     }
 
+    async hset(key: string, value: Record<string, string>): Promise<number> {
+        return await this.clientRW.hset(key, value)
+    }
+
+    async lpush(key: string, ...values: string[]): Promise<number> {
+        return await this.clientRW.lpush(key, ...values)
+    }
+
+    async incrby(key: string, value: number): Promise<number> {
+        return await this.clientRW.incrby(key, value)
+    }
+
     async keys(pattern: string): Promise<string[]> {
         return await this.clientRW.keys(pattern)
     }
@@ -134,7 +178,15 @@ export class StoreService implements OnHealthCheck, OnDestroy {
         return await this.clientRW.del(...keys)
     }
 
-    async bumpTags(tags: StoreTag[]): Promise<'OK' | null> {
+    async hdel(key: string, ...fields: string[]): Promise<number> {
+        return await this.clientRW.hdel(key, ...fields)
+    }
+
+    async expire(key: string, seconds: number): Promise<number> {
+        return await this.clientRW.expire(key, seconds, 'NX')
+    }
+
+    async bumpTags(tags: string[]): Promise<'OK' | null> {
         const tagsValue = await this.clientRO.get(this.tagsKey)
         const tagsConfig: TagsConfig = tagsValue ? JSON.parse(tagsValue) : {}
         const timestamp: number = Date.now()
@@ -151,22 +203,24 @@ export class StoreService implements OnHealthCheck, OnDestroy {
     }
 
     private validate({ tags, timestamp }: TaggedStoreValue, tagsConfig: TagsConfig): boolean {
-        const tagTimestamps: number[] = Object.entries(tagsConfig)
-            .filter(([tag]) => tags.includes(<StoreTag>tag))
+        const tagTimestamps = Object.entries(tagsConfig)
+            .filter(([tag]) => tags.includes(tag))
             .map(([, tagTimestamp]) => tagTimestamp)
 
-        return tagTimestamps.every((tagTimestamp) => tagTimestamp <= timestamp)
+        return tagTimestamps.every((tagTimestamp) => tagTimestamp && tagTimestamp <= timestamp)
     }
 
-    private async wrapValueWithMetadata(data: string, tags: StoreTag[]): Promise<string> {
+    private async wrapValueWithMetadata(data: string, tags: string[]): Promise<string> {
         const tagsValue = await this.clientRO.get(this.tagsKey)
         const tagsConfig: TagsConfig = tagsValue ? JSON.parse(tagsValue) : {}
 
-        const tagTimestamps: number[] = Object.entries(tagsConfig)
-            .filter(([tag]) => tags.includes(<StoreTag>tag))
+        const tagTimestamps = Object.entries(tagsConfig)
+            .filter(([tag]) => tags.includes(tag))
             .map(([, tagTimestamp]) => tagTimestamp)
+            // eslint-disable-next-line unicorn/prefer-native-coercion-functions
+            .filter((tagTimestamp): tagTimestamp is number => Boolean(tagTimestamp))
 
-        const timestamp: number = tagTimestamps.length > 0 ? Math.max(...tagTimestamps) : 0
+        const timestamp = tagTimestamps.length > 0 ? Math.max(...tagTimestamps) : 0
 
         const wrappedValue: TaggedStoreValue = { data, tags, timestamp }
 

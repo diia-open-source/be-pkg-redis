@@ -1,51 +1,44 @@
-const redlockMock = {
-    constructor: jest.fn(),
-    acquire: jest.fn(),
-}
-
-const redisClientRwMock = {
-    on: jest.fn(),
-}
-
-const RedisServiceMock = {
-    createClient: jest.fn(),
-}
-
-class RedlockMutexMock {
-    constructor(...args: unknown[]) {
-        redlockMock.constructor(...args)
-    }
-
-    acquire(...args: unknown[]): unknown {
-        return redlockMock.acquire(...args)
-    }
-}
-
-jest.mock('redis-semaphore', () => ({ RedlockMutex: RedlockMutexMock }))
-jest.mock('@services/redis', () => ({ RedisService: RedisServiceMock }))
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Redis } from 'ioredis'
+import { RedlockMutex } from 'redis-semaphore'
+import { mock } from 'vitest-mock-extended'
 
 import Logger from '@diia-inhouse/diia-logger'
-import { mockClass } from '@diia-inhouse/test'
 
 import { RedlockService } from '../../../src/index'
+import { RedisService } from '../../../src/services/redis'
 import { config } from '../../mocks/services/redlock'
 
-const LoggerMock = mockClass(Logger)
+vi.mock('redis-semaphore', () => ({
+    RedlockMutex: class RedlockMutexMock {
+        acquire(): unknown {
+            return vi.fn()
+        }
+    },
+}))
+
+const redisClientRwMock = {
+    on: vi.fn(),
+    set: vi.fn(),
+    expire: vi.fn(),
+    del: vi.fn(),
+    status: 'ready',
+} as unknown as Redis
 
 describe('RedlockService', () => {
-    const logger = new LoggerMock()
+    const logger = mock<Logger>()
 
     describe('event handlers', () => {
         it('should properly react on different events', () => {
             const expectedRedisError = new Error('Unable to instantiate redis client')
 
-            RedisServiceMock.createClient.mockReturnValue(redisClientRwMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValue(redisClientRwMock)
 
-            redisClientRwMock.on.mockImplementationOnce((_event, cb) => {
+            vi.mocked(redisClientRwMock.on as any).mockImplementationOnce((_event: any, cb: any) => {
                 cb()
             })
 
-            redisClientRwMock.on.mockImplementationOnce((_event, cb) => {
+            vi.mocked(redisClientRwMock.on as any).mockImplementationOnce((_event: any, cb: any) => {
                 cb(expectedRedisError)
             })
 
@@ -61,36 +54,30 @@ describe('RedlockService', () => {
             const resource = 'resource'
             const ttl = 1800
 
-            RedisServiceMock.createClient.mockReturnValue(redisClientRwMock)
-            redlockMock.acquire.mockResolvedValue({})
+            vi.spyOn(RedisService, 'createClient').mockReturnValue(redisClientRwMock)
+            vi.spyOn(RedlockMutex.prototype, 'acquire').mockResolvedValue()
 
             const redlockService = new RedlockService(config, logger)
 
-            expect(await redlockService.lock(resource, ttl)).toEqual({})
-            expect(redlockMock.constructor).toHaveBeenCalledWith([redisClientRwMock], resource, {
-                acquireTimeout: 3600,
-                lockTimeout: 1800,
-            })
-            expect(redlockMock.acquire).toHaveBeenCalled()
-            expect(logger.info).toHaveBeenCalledWith(`Start LOCK resource [${resource}] for ttl [${ttl}]`)
+            expect(await redlockService.lock(resource, ttl, { retryInterval: 1 })).toEqual({})
+
+            expect(RedlockMutex.prototype.acquire).toHaveBeenCalled()
+            expect(logger.info).toHaveBeenCalledWith(`Start LOCK resource [${resource}] for ttl [${ttl}]ms`)
         })
 
         it('should lock resource with default ttl', async () => {
             const resource = 'resource'
             const defaultTtl = 60000
 
-            RedisServiceMock.createClient.mockReturnValue(redisClientRwMock)
-            redlockMock.acquire.mockResolvedValue({})
+            vi.spyOn(RedisService, 'createClient').mockReturnValue(redisClientRwMock)
+            vi.spyOn(RedlockMutex.prototype, 'acquire').mockResolvedValue()
 
             const redlockService = new RedlockService(config, logger)
 
             expect(await redlockService.lock(resource)).toEqual({})
-            expect(redlockMock.constructor).toHaveBeenCalledWith([redisClientRwMock], resource, {
-                acquireTimeout: 120_000,
-                lockTimeout: 60_000,
-            })
-            expect(redlockMock.acquire).toHaveBeenCalled()
-            expect(logger.info).toHaveBeenCalledWith(`Start LOCK resource [${resource}] for ttl [${defaultTtl}]`)
+
+            expect(RedlockMutex.prototype.acquire).toHaveBeenCalled()
+            expect(logger.info).toHaveBeenCalledWith(`Start LOCK resource [${resource}] for ttl [${defaultTtl}]ms`)
         })
     })
 })

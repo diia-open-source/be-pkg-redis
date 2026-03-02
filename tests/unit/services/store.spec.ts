@@ -1,91 +1,83 @@
-const redisClientRoMock = {
-    on: jest.fn(),
-    get: jest.fn(),
-    keys: jest.fn(),
-    mget: jest.fn(),
-    hget: jest.fn(),
-    hvals: jest.fn(),
-    hscan: jest.fn(),
-    scan: jest.fn(),
-    hgetall: jest.fn(),
-    hlen: jest.fn(),
-    lrange: jest.fn(),
-    pttl: jest.fn(),
-    status: 'ready',
-}
-
-const redisClientRwMock = {
-    on: jest.fn(),
-    set: jest.fn(),
-    hset: jest.fn(),
-    lpush: jest.fn(),
-    expire: jest.fn(),
-    incrby: jest.fn(),
-    pexpire: jest.fn(),
-    del: jest.fn(),
-    hdel: jest.fn(),
-    flushdb: jest.fn(),
-    status: 'ready',
-}
-
-const RedisServiceMock = {
-    createClient: jest.fn(),
-}
-
-jest.mock('@services/redis', () => ({ RedisService: RedisServiceMock }))
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { mock } from 'vitest-mock-extended'
 
 import Logger from '@diia-inhouse/diia-logger'
 import { ServiceUnavailableError } from '@diia-inhouse/errors'
-import { mockClass } from '@diia-inhouse/test'
 import { HttpStatusCode } from '@diia-inhouse/types'
 
-import { CacheStatus, SetValueOptions, StoreService, TaggedStoreValue, TagsConfig } from '../../../src/index'
+import { SetValueOptions, StoreService, StoreStatus, TaggedStoreValue, TagsConfig } from '../../../src/index'
+import { RedisService } from '../../../src/services/redis'
 import { generateUuid } from '../../mocks/randomData'
 import { config } from '../../mocks/services/store'
 
-const LoggerMock = mockClass(Logger)
+const redisClientRoMock = {
+    on: vi.fn(),
+    get: vi.fn(),
+    keys: vi.fn(),
+    mget: vi.fn(),
+    hget: vi.fn(),
+    hvals: vi.fn(),
+    hscan: vi.fn(),
+    scan: vi.fn(),
+    hgetall: vi.fn(),
+    hlen: vi.fn(),
+    lrange: vi.fn(),
+    pttl: vi.fn(),
+    status: 'ready',
+} as any
+
+const redisClientRwMock = {
+    on: vi.fn(),
+    set: vi.fn(),
+    hset: vi.fn(),
+    lpush: vi.fn(),
+    expire: vi.fn(),
+    incrby: vi.fn(),
+    pexpire: vi.fn(),
+    del: vi.fn(),
+    hdel: vi.fn(),
+    flushdb: vi.fn(),
+    status: 'ready',
+} as any
 
 describe('StoreService', () => {
     const now = Date.now()
-    const logger = new LoggerMock()
+    const logger = mock<Logger>()
 
     beforeAll(() => {
-        jest.useFakeTimers({ now })
+        vi.useFakeTimers({ now })
     })
 
     afterAll(() => {
-        jest.useRealTimers()
+        vi.useRealTimers()
     })
 
     describe('event handlers', () => {
         it('should properly react on different events', () => {
             const connError = new Error('Connn error')
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
 
-            redisClientRoMock.on.mockImplementationOnce((_connectEvent, cb) => {
+            vi.mocked(redisClientRoMock.on as any).mockImplementationOnce((_connectEvent: any, cb: any) => {
                 cb()
             })
-            redisClientRoMock.on.mockImplementationOnce((_errorEvent, cb) => {
+            vi.mocked(redisClientRoMock.on as any).mockImplementationOnce((_errorEvent: any, cb: any) => {
                 cb(connError)
             })
 
-            redisClientRwMock.on.mockImplementationOnce((_connectEvent, cb) => {
+            vi.mocked(redisClientRwMock.on as any).mockImplementationOnce((_connectEvent: any, cb: any) => {
                 cb()
             })
-            redisClientRwMock.on.mockImplementationOnce((_errorEvent, cb) => {
+            vi.mocked(redisClientRwMock.on as any).mockImplementationOnce((_errorEvent: any, cb: any) => {
                 cb(connError)
             })
 
             new StoreService(config, logger)
 
-            expect(logger.info).toHaveBeenCalledWith(`Store READ-WRITE connection open to ${JSON.stringify(config.readWrite.sentinels)}`)
-            expect(logger.info).toHaveBeenCalledWith('Store READ-WRITE connection error ', { err: connError })
-            expect(logger.info).toHaveBeenCalledWith(`Store Path ${JSON.stringify(config.readWrite.sentinels)}`)
-            expect(logger.info).toHaveBeenCalledWith(`Store READ-ONLY connection open to ${JSON.stringify(config.readOnly.sentinels)}`)
-            expect(logger.info).toHaveBeenCalledWith('Store READ-ONLY connection error ', { err: connError })
-            expect(logger.info).toHaveBeenCalledWith(`Store Path ${JSON.stringify(config.readOnly.sentinels)}`)
+            expect(logger.info).toHaveBeenCalledWith('Store READ-WRITE connection open')
+            expect(logger.error).toHaveBeenCalledWith('Store READ-WRITE connection error ', { err: connError })
+            expect(logger.info).toHaveBeenCalledWith('Store READ-ONLY connection open')
+            expect(logger.error).toHaveBeenCalledWith('Store READ-ONLY connection error ', { err: connError })
         })
     })
 
@@ -94,8 +86,7 @@ describe('StoreService', () => {
             const key = generateUuid()
             const expectedValue = 'value'
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRoMock.get.mockResolvedValue(expectedValue)
 
             const storeService = new StoreService(config, logger)
@@ -111,8 +102,7 @@ describe('StoreService', () => {
             const field = 'field'
             const expectedValue = 'value'
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRoMock.hget.mockResolvedValue(expectedValue)
 
             const storeService = new StoreService(config, logger)
@@ -127,8 +117,7 @@ describe('StoreService', () => {
             const key = generateUuid()
             const expectedValue = { '1': 'value', '2': 'value' }
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRoMock.hgetall.mockResolvedValue(expectedValue)
 
             const storeService = new StoreService(config, logger)
@@ -143,8 +132,7 @@ describe('StoreService', () => {
             const key = generateUuid()
             const expectedValue = ['value', 'value2']
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRoMock.hvals.mockResolvedValue(expectedValue)
 
             const storeService = new StoreService(config, logger)
@@ -162,8 +150,7 @@ describe('StoreService', () => {
             const expectedValue = { cursor, elements: ['1', '2'] }
             const mockedValue = [cursor, ['1', '2']]
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRoMock.hscan.mockResolvedValue(mockedValue)
 
             const storeService = new StoreService(config, logger)
@@ -181,8 +168,7 @@ describe('StoreService', () => {
             const expectedValue = { cursor, elements: ['1', '2'] }
             const mockedValue = [cursor, ['1', '2']]
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRoMock.scan.mockResolvedValue(mockedValue)
 
             const storeService = new StoreService(config, logger)
@@ -197,8 +183,7 @@ describe('StoreService', () => {
             const key = generateUuid()
             const expectedValue = 1
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRoMock.hlen.mockResolvedValue(expectedValue)
 
             const storeService = new StoreService(config, logger)
@@ -215,8 +200,7 @@ describe('StoreService', () => {
             const stop = -1
             const expectedValue = ['1', '2']
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRoMock.lrange.mockResolvedValue(expectedValue)
 
             const storeService = new StoreService(config, logger)
@@ -232,29 +216,28 @@ describe('StoreService', () => {
             [
                 'there are no tags',
                 generateUuid(),
-                JSON.stringify(<TaggedStoreValue>{ data: 'value', tags: [], timestamp: 1800 }),
+                JSON.stringify({ data: 'value', tags: [], timestamp: 1800 } as TaggedStoreValue),
                 null,
                 'value',
             ],
             [
                 'invalid tags',
                 generateUuid(),
-                JSON.stringify(<TaggedStoreValue>{ data: 'value', tags: ['publicService'], timestamp: 1800 }),
-                JSON.stringify(<TagsConfig>{ publicService: 1900 }),
+                JSON.stringify({ data: 'value', tags: ['publicService'], timestamp: 1800 } as TaggedStoreValue),
+                JSON.stringify({ publicService: 1900 } as TagsConfig),
                 null,
             ],
             [
                 'valid tags',
                 generateUuid(),
-                JSON.stringify(<TaggedStoreValue>{ data: 'value', tags: ['publicService'], timestamp: 1800 }),
-                JSON.stringify(<TagsConfig>{ publicService: 1800 }),
+                JSON.stringify({ data: 'value', tags: ['publicService'], timestamp: 1800 } as TaggedStoreValue),
+                JSON.stringify({ publicService: 1800 } as TagsConfig),
                 'value',
             ],
         ])(
             'should successfully get value using tags in case %s',
             async (_msg: string, key: string, cachedValue: string | null, tagsConfig: string | null, expectedValue: string | null) => {
-                RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-                RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+                vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
                 redisClientRoMock.mget.mockResolvedValue([cachedValue, tagsConfig])
 
                 const storeService = new StoreService(config, logger)
@@ -268,15 +251,12 @@ describe('StoreService', () => {
             const key = generateUuid()
             const expectedError = new ServiceUnavailableError()
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRoMock.mget.mockResolvedValue(['invalid-json-string', null])
 
             const storeService = new StoreService(config, logger)
 
-            await expect(async () => {
-                await storeService.getUsingTags(key)
-            }).rejects.toEqual(expectedError)
+            await expect(storeService.getUsingTags(key)).rejects.toEqual(expectedError)
             expect(redisClientRoMock.mget).toHaveBeenCalledWith(key, '_tags')
             expect(logger.error).toHaveBeenCalledWith('Failed when parse value with tags', {
                 err: new SyntaxError(`Unexpected token 'i', "invalid-json-string" is not valid JSON`),
@@ -288,8 +268,7 @@ describe('StoreService', () => {
         it('should successfully remove value from store', async () => {
             const key = generateUuid()
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRwMock.del.mockResolvedValue(1)
 
             const storeService = new StoreService(config, logger)
@@ -304,8 +283,7 @@ describe('StoreService', () => {
             const key = generateUuid()
             const field = 'field'
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRwMock.hdel.mockResolvedValue(1)
 
             const storeService = new StoreService(config, logger)
@@ -320,8 +298,7 @@ describe('StoreService', () => {
             const key = generateUuid()
             const value = 100
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRwMock.incrby.mockResolvedValue(value)
 
             const storeService = new StoreService(config, logger)
@@ -336,8 +313,7 @@ describe('StoreService', () => {
             const key = generateUuid()
             const seconds = 1
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRwMock.expire.mockResolvedValue(1)
 
             const storeService = new StoreService(config, logger)
@@ -353,9 +329,8 @@ describe('StoreService', () => {
             const value = 'value'
             const options: SetValueOptions = { tags: ['publicService'], ttl: 1800 }
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
-            redisClientRoMock.get.mockResolvedValue(JSON.stringify(<TagsConfig>{ publicService: 1800 }))
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
+            redisClientRoMock.get.mockResolvedValue(JSON.stringify({ publicService: 1800 } as TagsConfig))
             redisClientRwMock.set.mockResolvedValue('OK')
 
             const storeService = new StoreService(config, logger)
@@ -375,8 +350,7 @@ describe('StoreService', () => {
             const value = 'value'
             const options: SetValueOptions = { tags: ['publicService'] }
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRoMock.get.mockResolvedValue(null)
             redisClientRwMock.set.mockResolvedValue('OK')
 
@@ -391,8 +365,7 @@ describe('StoreService', () => {
             const key = generateUuid()
             const value = 'value'
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRwMock.set.mockResolvedValue('OK')
 
             const storeService = new StoreService(config, logger)
@@ -407,8 +380,7 @@ describe('StoreService', () => {
             const key = generateUuid()
             const value = { '1': 'value' }
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRwMock.hset.mockResolvedValue(1)
 
             const storeService = new StoreService(config, logger)
@@ -423,8 +395,7 @@ describe('StoreService', () => {
             const key = generateUuid()
             const value = 'value'
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRwMock.lpush.mockResolvedValue(1)
 
             const storeService = new StoreService(config, logger)
@@ -438,10 +409,9 @@ describe('StoreService', () => {
         it('should just return item from cache', async () => {
             const key = generateUuid()
             const expectedValue = 'value'
-            const closure = jest.fn()
+            const closure = vi.fn()
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRoMock.get.mockResolvedValue(expectedValue)
             closure.mockResolvedValueOnce(expectedValue)
 
@@ -454,10 +424,9 @@ describe('StoreService', () => {
 
         it.each(['value', ''])('should set item `%s` received from closure in store', async (expectedValue) => {
             const key = generateUuid()
-            const closure = jest.fn()
+            const closure = vi.fn()
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRoMock.get.mockResolvedValue(null)
             closure.mockResolvedValueOnce(expectedValue)
 
@@ -475,19 +444,20 @@ describe('StoreService', () => {
             [
                 'OK',
                 ['ready', 'ready'],
-                { status: HttpStatusCode.OK, details: { store: <CacheStatus>{ readOnly: 'ready', readWrite: 'ready' } } },
+                { status: HttpStatusCode.OK, details: { store: { readOnly: 'ready', readWrite: 'ready' } as StoreStatus } },
             ],
             [
                 'SERVICE_UNAVAILABLE',
                 ['connecting', 'ready'],
                 {
                     status: HttpStatusCode.SERVICE_UNAVAILABLE,
-                    details: { store: <CacheStatus>{ readOnly: 'ready', readWrite: 'connecting' } },
+                    details: { store: { readOnly: 'ready', readWrite: 'connecting' } as StoreStatus },
                 },
             ],
         ])('should return health status `%s`', async (_status, [rw, ro], expectedStatus) => {
-            RedisServiceMock.createClient.mockReturnValueOnce({ ...redisClientRwMock, status: rw })
-            RedisServiceMock.createClient.mockReturnValueOnce({ ...redisClientRoMock, ro })
+            vi.spyOn(RedisService, 'createClient')
+                .mockReturnValueOnce({ ...redisClientRwMock, status: rw })
+                .mockReturnValueOnce({ ...redisClientRoMock, status: ro })
 
             const storeService = new StoreService(config, logger)
 
@@ -499,15 +469,14 @@ describe('StoreService', () => {
         it.each([
             [
                 'tags config exists in store',
-                JSON.stringify(<TagsConfig>{ ['faq']: now }),
-                JSON.stringify(<TagsConfig>{ ['faq']: now, ['publicService']: now }),
+                JSON.stringify({ ['faq']: now } as TagsConfig),
+                JSON.stringify({ ['faq']: now, ['publicService']: now } as TagsConfig),
             ],
-            ['tags does not exist in store', null, JSON.stringify(<TagsConfig>{ ['publicService']: now })],
+            ['tags does not exist in store', null, JSON.stringify({ ['publicService']: now } as TagsConfig)],
         ])('should successfully bump tags when %s', async (_msg, tagsConfig: string | null, expectedTagsConfig: string) => {
             const tags: string[] = ['publicService']
 
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRoMock.get.mockResolvedValue(tagsConfig)
             redisClientRwMock.set.mockResolvedValue('OK')
 
@@ -521,8 +490,7 @@ describe('StoreService', () => {
 
     describe('method: `flushDb`', () => {
         it('should successfully flush entire store', async () => {
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRwMock)
-            RedisServiceMock.createClient.mockReturnValueOnce(redisClientRoMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRwMock.flushdb.mockResolvedValue('OK')
 
             const storeService = new StoreService(config, logger)

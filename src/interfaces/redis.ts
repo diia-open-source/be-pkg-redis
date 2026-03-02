@@ -1,6 +1,16 @@
-import { RedisOptions } from 'ioredis'
+import { RedisOptions as IoRedisOptions } from 'ioredis'
 
-export { RedisOptions } from 'ioredis'
+export enum RedisMode {
+    ReadWrite = 'READ-WRITE',
+    ReadOnly = 'READ-ONLY',
+}
+
+export interface RedisOptions extends IoRedisOptions {
+    maxRetryAttempts?: number
+    initialRetryDelay?: number
+    maxRetryDelay?: number
+    redisMode?: RedisMode
+}
 
 export enum RedisStatusValue {
     Ready = 'ready',
@@ -14,7 +24,7 @@ export interface RedisConfig {
     enablePubsub?: boolean
 }
 
-export interface CacheStatus {
+export interface StoreStatus {
     readWrite: RedisStatus
     readOnly: RedisStatus
 }

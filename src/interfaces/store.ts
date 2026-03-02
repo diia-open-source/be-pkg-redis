@@ -1,4 +1,4 @@
-import { CacheStatus } from './redis'
+import { StoreStatus } from './redis'
 
 export type TagsConfig = {
     [tag in string]?: number
@@ -11,8 +11,15 @@ export interface TaggedStoreValue {
 }
 
 export interface SetValueOptions {
+    /**
+     * Time to live in milliseconds.
+     * If not set, the key will be permanent.
+     */
     ttl?: number
+    /**
+     * Tags associated with the value.
+     */
     tags?: string[]
 }
 
-export type StoreStatusResult = { store: CacheStatus }
+export type StoreStatusResult = { store: StoreStatus }

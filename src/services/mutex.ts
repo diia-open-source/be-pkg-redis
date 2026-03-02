@@ -3,9 +3,8 @@ import { RedlockMutex } from 'redis-semaphore'
 
 import { HealthCheckResult, HttpStatusCode, Logger, OnDestroy, OnHealthCheck } from '@diia-inhouse/types'
 
-import { MutexStatusResult } from '../interfaces'
-import { RedisConfig, RedisStatusValue } from '../interfaces/redis'
-
+import { LockOptions, MutexStatusResult } from '../interfaces'
+import { RedisConfig, RedisMode, RedisStatusValue } from '../interfaces/redis'
 import { RedisService } from './redis'
 
 export class RedlockService implements OnHealthCheck, OnDestroy {
@@ -18,7 +17,7 @@ export class RedlockService implements OnHealthCheck, OnDestroy {
     ) {
         const { readWrite } = this.storeConfig
 
-        this.clientRW = RedisService.createClient(readWrite)
+        this.clientRW = RedisService.createClient({ ...readWrite, redisMode: RedisMode.ReadWrite }, this.logger)
 
         this.clientRW.on('connect', () => {
             const { host, port, sentinels } = readWrite
@@ -45,9 +44,9 @@ export class RedlockService implements OnHealthCheck, OnDestroy {
         await this.clientRW.quit()
     }
 
-    async lock(resource: string, ttl = 60000): Promise<RedlockMutex> {
-        this.logger.info(`Start LOCK resource [${resource}] for ttl [${ttl}]`)
-        const mutex = new RedlockMutex([this.clientRW], resource, { lockTimeout: ttl, acquireTimeout: ttl * 2 })
+    async lock(resource: string, ttl = 60000, { retryInterval = 500 }: LockOptions = {}): Promise<RedlockMutex> {
+        this.logger.info(`Start LOCK resource [${resource}] for ttl [${ttl}]ms`)
+        const mutex = new RedlockMutex([this.clientRW], resource, { lockTimeout: ttl, acquireTimeout: ttl * 2, retryInterval })
 
         await mutex.acquire()
 

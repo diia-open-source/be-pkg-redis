@@ -1,58 +1,50 @@
 /* eslint-disable unicorn/consistent-function-scoping */
-const pubSubProviderMock = {
-    unsubscribe: jest.fn(),
-    publish: jest.fn(),
-    onceChannelMessage: jest.fn(),
-    onChannelMessage: jest.fn(),
-    getStatus: jest.fn(),
-}
-
-class PubSubProviderMock {
-    unsubscribe(...args: unknown[]): unknown {
-        return pubSubProviderMock.unsubscribe(...args)
-    }
-
-    publish(...args: unknown[]): unknown {
-        return pubSubProviderMock.publish(...args)
-    }
-
-    onceChannelMessage(...args: unknown[]): unknown {
-        return pubSubProviderMock.onceChannelMessage(...args)
-    }
-
-    onChannelMessage(...args: unknown[]): unknown {
-        return pubSubProviderMock.onChannelMessage(...args)
-    }
-
-    getStatus(...args: unknown[]): unknown {
-        return pubSubProviderMock.getStatus(...args)
-    }
-}
-
-jest.mock('@services/providers/pubsub', () => ({ PubSubProvider: PubSubProviderMock }))
+import { mock } from 'vitest-mock-extended'
 
 import Logger from '@diia-inhouse/diia-logger'
-import { mockClass } from '@diia-inhouse/test'
 import { HttpStatusCode } from '@diia-inhouse/types'
 
 import { PubSubService, PubSubStatus, RedisStatusValue } from '../../../src/index'
+import { PubSubProvider } from '../../../src/services/providers/pubsub'
 import { generateUuid } from '../../mocks/randomData'
 import { config } from '../../mocks/services/pubsub'
 
-const LoggerMock = mockClass(Logger)
+vi.mock('../../../src/services/providers/pubsub', () => ({
+    PubSubProvider: class PubSubProviderMock {
+        unsubscribe(): unknown {
+            return vi.fn()
+        }
+
+        publish(): unknown {
+            return vi.fn()
+        }
+
+        onceChannelMessage(): unknown {
+            return vi.fn()
+        }
+
+        onChannelMessage(): unknown {
+            return vi.fn()
+        }
+
+        getStatus(): unknown {
+            return vi.fn()
+        }
+    },
+}))
 
 describe('PubSubService', () => {
-    const logger = new LoggerMock()
+    const logger = mock<Logger>()
     const pubSubService = new PubSubService(config, logger)
 
     describe('method: `unsubscribe`', () => {
         it('should successfully unsubscribe', async () => {
             const channel = generateUuid()
 
-            pubSubProviderMock.unsubscribe.mockResolvedValue(true)
+            vi.spyOn(PubSubProvider.prototype, 'unsubscribe').mockResolvedValue(true)
 
             expect(await pubSubService.unsubscribe(channel)).toBe(true)
-            expect(pubSubProviderMock.unsubscribe).toHaveBeenCalledWith(channel)
+            expect(PubSubProvider.prototype.unsubscribe).toHaveBeenCalledWith(channel)
         })
     })
 
@@ -60,10 +52,10 @@ describe('PubSubService', () => {
         it('should successfully publish message', async () => {
             const channel = generateUuid()
 
-            pubSubProviderMock.publish.mockResolvedValue(1)
+            vi.spyOn(PubSubProvider.prototype, 'publish').mockResolvedValue(1)
 
             expect(await pubSubService.publish(channel, 'message')).toBe(1)
-            expect(pubSubProviderMock.publish).toHaveBeenCalledWith(channel, 'message')
+            expect(PubSubProvider.prototype.publish).toHaveBeenCalledWith(channel, 'message')
         })
     })
 
@@ -72,10 +64,10 @@ describe('PubSubService', () => {
             const channel = generateUuid()
             const handler = async (): Promise<void> => {}
 
-            pubSubProviderMock.onChannelMessage.mockResolvedValue(true)
+            vi.spyOn(PubSubProvider.prototype, 'onChannelMessage').mockResolvedValue()
 
-            expect(await pubSubService.onChannelMessage(channel, handler)).toBe(true)
-            expect(pubSubProviderMock.onChannelMessage).toHaveBeenCalledWith(channel, handler)
+            expect(await pubSubService.onChannelMessage(channel, handler)).toBeUndefined()
+            expect(PubSubProvider.prototype.onChannelMessage).toHaveBeenCalledWith(channel, handler)
         })
     })
 
@@ -84,10 +76,9 @@ describe('PubSubService', () => {
             const channel = generateUuid()
             const handler = async (): Promise<void> => {}
 
-            pubSubProviderMock.onceChannelMessage.mockResolvedValue(true)
+            vi.spyOn(PubSubProvider.prototype, 'onceChannelMessage').mockResolvedValue()
 
-            expect(await pubSubService.onceChannelMessage(channel, handler)).toBe(true)
-            expect(pubSubProviderMock.onceChannelMessage).toHaveBeenCalledWith(channel, handler)
+            expect(await pubSubService.onceChannelMessage(channel, handler)).toBeUndefined()
         })
     })
 
@@ -97,18 +88,18 @@ describe('PubSubService', () => {
                 'OK',
                 {
                     status: HttpStatusCode.OK,
-                    details: { pubsub: <PubSubStatus>{ pub: RedisStatusValue.Ready, sub: RedisStatusValue.Ready } },
+                    details: { pubsub: { pub: RedisStatusValue.Ready, sub: RedisStatusValue.Ready } as PubSubStatus },
                 },
             ],
             [
                 'SERVICE UNAVAILABLE',
                 {
                     status: HttpStatusCode.SERVICE_UNAVAILABLE,
-                    details: { pubsub: <PubSubStatus>{ pub: <RedisStatusValue>'connecting', sub: RedisStatusValue.Ready } },
+                    details: { pubsub: { pub: 'connecting' as RedisStatusValue, sub: RedisStatusValue.Ready } as PubSubStatus },
                 },
             ],
         ])('should return `%s` status', async (_httpStatus, expectedStatus) => {
-            pubSubProviderMock.getStatus.mockReturnValue(expectedStatus.details.pubsub)
+            vi.spyOn(PubSubProvider.prototype, 'getStatus').mockReturnValue(expectedStatus.details.pubsub)
 
             expect(await pubSubService.onHealthCheck()).toEqual(expectedStatus)
         })

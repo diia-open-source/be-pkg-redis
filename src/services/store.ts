@@ -3,9 +3,8 @@ import Redis from 'ioredis'
 import { ServiceUnavailableError } from '@diia-inhouse/errors'
 import { HealthCheckResult, HttpStatusCode, Logger, OnDestroy, OnHealthCheck } from '@diia-inhouse/types'
 
-import { CacheStatus, RedisConfig, RedisStatusValue } from '../interfaces/redis'
+import { RedisConfig, RedisMode, RedisStatusValue, StoreStatus } from '../interfaces/redis'
 import { SetValueOptions, StoreStatusResult, TaggedStoreValue, TagsConfig } from '../interfaces/store'
-
 import { RedisService } from './redis'
 
 export class StoreService implements OnHealthCheck, OnDestroy {
@@ -22,30 +21,28 @@ export class StoreService implements OnHealthCheck, OnDestroy {
     ) {
         const { readWrite, readOnly } = this.storeConfig
 
-        this.clientRW = RedisService.createClient(readWrite)
-        this.clientRO = RedisService.createClient(readOnly)
+        this.clientRW = RedisService.createClient({ ...readWrite, redisMode: RedisMode.ReadWrite }, this.logger)
+        this.clientRO = RedisService.createClient({ ...readOnly, redisMode: RedisMode.ReadOnly }, this.logger)
 
         this.clientRW.on('connect', () => {
-            this.logger.info(`Store READ-WRITE connection open to ${JSON.stringify(readWrite.sentinels)}`)
+            this.logger.info('Store READ-WRITE connection open')
         })
 
         this.clientRW.on('error', (err: Error) => {
-            this.logger.info('Store READ-WRITE connection error ', { err })
-            this.logger.info(`Store Path ${JSON.stringify(readWrite.sentinels)}`)
+            this.logger.error('Store READ-WRITE connection error ', { err })
         })
 
         this.clientRO.on('connect', () => {
-            this.logger.info(`Store READ-ONLY connection open to ${JSON.stringify(readOnly.sentinels)}`)
+            this.logger.info('Store READ-ONLY connection open')
         })
 
         this.clientRO.on('error', (err: Error) => {
-            this.logger.info('Store READ-ONLY connection error ', { err })
-            this.logger.info(`Store Path ${JSON.stringify(readOnly.sentinels)}`)
+            this.logger.error('Store READ-ONLY connection error ', { err })
         })
     }
 
     async onHealthCheck(): Promise<HealthCheckResult<StoreStatusResult>> {
-        const storeStatus: CacheStatus = {
+        const storeStatus: StoreStatus = {
             readWrite: this.clientRW.status,
             readOnly: this.clientRO.status,
         }

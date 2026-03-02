@@ -3,7 +3,7 @@ import Redis from 'ioredis'
 import { Logger } from '@diia-inhouse/types'
 
 import { MessageHandler, PubSubServiceProvider, PubSubStatus } from '../../interfaces/pubsub'
-import { RedisConfig } from '../../interfaces/redis'
+import { RedisConfig, RedisMode } from '../../interfaces/redis'
 import { RedisService } from '../redis'
 
 export class PubSubProvider implements PubSubServiceProvider {
@@ -20,8 +20,8 @@ export class PubSubProvider implements PubSubServiceProvider {
 
         private readonly logger: Logger,
     ) {
-        this.pub = RedisService.createClient(readWrite)
-        this.sub = RedisService.createClient({ ...readOnly, autoResubscribe: true })
+        this.pub = RedisService.createClient({ ...readWrite, redisMode: RedisMode.ReadWrite }, this.logger)
+        this.sub = RedisService.createClient({ ...readOnly, redisMode: RedisMode.ReadOnly, autoResubscribe: true }, this.logger)
 
         this.pub.on('connect', () => {
             const { host, port, sentinels } = readWrite

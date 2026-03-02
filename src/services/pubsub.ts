@@ -2,7 +2,6 @@ import { HealthCheckResult, HttpStatusCode, Logger, OnDestroy, OnHealthCheck } f
 
 import { MessageHandler, PubSubStatus, PubSubStatusResult } from '../interfaces/pubsub'
 import { RedisConfig, RedisStatusValue } from '../interfaces/redis'
-
 import { PubSubProvider } from './providers/pubsub'
 
 export class PubSubService implements OnHealthCheck, OnDestroy {

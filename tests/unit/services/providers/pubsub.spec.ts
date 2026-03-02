@@ -1,51 +1,44 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable unicorn/consistent-function-scoping */
-/* eslint-disable jest/no-conditional-in-test */
-const redisClientSubMock = {
-    on: jest.fn(),
-    subscribe: jest.fn(),
-    unsubscribe: jest.fn(),
-    status: 'ready',
-}
 
-const redisClientPubMock = {
-    on: jest.fn(),
-    publish: jest.fn(),
-    status: 'ready',
-}
-
-const createClient = jest.fn()
-
-const RedisServiceMock = {
-    createClient: createClient,
-}
-
-jest.mock('@services/redis', () => ({ RedisService: RedisServiceMock }))
+import { Redis } from 'ioredis'
+import { mock } from 'vitest-mock-extended'
 
 import Logger from '@diia-inhouse/diia-logger'
-import { mockClass } from '@diia-inhouse/test'
 
 import { PubSubProvider } from '../../../../src/services/providers/pubsub'
+import { RedisService } from '../../../../src/services/redis'
 import { generateUuid } from '../../../mocks/randomData'
 import { config } from '../../../mocks/services/providers/pubsub'
 
-const LoggerMock = mockClass(Logger)
+const redisClientSubMock = {
+    on: vi.fn(),
+    subscribe: vi.fn(),
+    unsubscribe: vi.fn(),
+    status: 'ready',
+} as unknown as Redis
+
+const redisClientPubMock = {
+    on: vi.fn(),
+    publish: vi.fn(),
+    status: 'ready',
+} as unknown as Redis
 
 describe('PubSubProvider', () => {
     describe('method: `unsubscribe`', () => {
         it('should successfully unsubscribe handler and log in case handler does not exist', async () => {
             const channel = generateUuid()
 
-            createClient.mockReturnValueOnce(redisClientPubMock)
-            createClient.mockReturnValueOnce(redisClientSubMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientPubMock).mockReturnValueOnce(redisClientSubMock)
 
-            redisClientSubMock.on.mockImplementation((_event, cb) => {
+            vi.mocked(redisClientSubMock.on as any).mockImplementation((_event: any, cb: any) => {
                 cb(channel, '{}')
             })
 
-            const logger = new LoggerMock()
+            const logger = mock<Logger>()
             const pubSubProvider = new PubSubProvider(config, logger)
 
-            redisClientSubMock.subscribe.mockResolvedValue(null)
+            vi.mocked(redisClientSubMock.subscribe).mockResolvedValue(null)
 
             await pubSubProvider.onceChannelMessage(channel, async () => {})
             await pubSubProvider.unsubscribe(channel)
@@ -59,13 +52,12 @@ describe('PubSubProvider', () => {
         it('should successfully publish message', async () => {
             const channel = generateUuid()
 
-            createClient.mockReturnValueOnce(redisClientPubMock)
-            createClient.mockReturnValueOnce(redisClientSubMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientPubMock).mockReturnValueOnce(redisClientSubMock)
 
-            const logger = new LoggerMock()
+            const logger = mock<Logger>()
             const pubSubProvider = new PubSubProvider(config, logger)
 
-            redisClientPubMock.publish.mockResolvedValue(1)
+            vi.mocked(redisClientPubMock.publish).mockResolvedValue(1)
 
             expect(await pubSubProvider.publish(channel, {})).toBe(1)
         })
@@ -77,19 +69,18 @@ describe('PubSubProvider', () => {
 
             const channel = generateUuid()
 
-            createClient.mockReturnValueOnce(redisClientPubMock)
-            createClient.mockReturnValueOnce(redisClientSubMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientPubMock).mockReturnValueOnce(redisClientSubMock)
 
-            redisClientSubMock.on.mockImplementation((event, cb) => {
+            vi.mocked(redisClientSubMock.on as any).mockImplementation((event: any, cb: any) => {
                 if (event === 'message') {
                     onMessageHandler = cb
                 }
             })
 
-            const logger = new LoggerMock()
+            const logger = mock<Logger>()
             const pubSubProvider = new PubSubProvider(config, logger)
 
-            redisClientSubMock.subscribe.mockResolvedValue(null)
+            vi.mocked(redisClientSubMock.subscribe).mockResolvedValue(null)
 
             await pubSubProvider.onceChannelMessage(channel, async (message) => {
                 expect(message).toBe('{}')
@@ -101,19 +92,18 @@ describe('PubSubProvider', () => {
         it('should fail to register handler for channel in case it was already registered', async () => {
             const channel = generateUuid()
 
-            createClient.mockReturnValueOnce(redisClientPubMock)
-            createClient.mockReturnValueOnce(redisClientSubMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientPubMock).mockReturnValueOnce(redisClientSubMock)
 
-            const logger = new LoggerMock()
+            const logger = mock<Logger>()
             const pubSubProvider = new PubSubProvider(config, logger)
 
-            redisClientSubMock.subscribe.mockResolvedValue(null)
+            vi.mocked(redisClientSubMock.subscribe).mockResolvedValue(null)
 
             await pubSubProvider.onceChannelMessage(channel, async () => {})
 
-            await expect(async () => {
-                await pubSubProvider.onceChannelMessage(channel, async () => {})
-            }).rejects.toEqual(new Error(`Handler already exists by the provided channel ${channel}`))
+            await expect(pubSubProvider.onceChannelMessage(channel, async () => {})).rejects.toEqual(
+                new Error(`Handler already exists by the provided channel ${channel}`),
+            )
         })
 
         it('should successfully register handler for channel and then only log error in case handler rejects', async () => {
@@ -122,19 +112,18 @@ describe('PubSubProvider', () => {
             const channel = generateUuid()
             const expectedError = new Error('Unable to handle message')
 
-            createClient.mockReturnValueOnce(redisClientPubMock)
-            createClient.mockReturnValueOnce(redisClientSubMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientPubMock).mockReturnValueOnce(redisClientSubMock)
 
-            redisClientSubMock.on.mockImplementation((event, cb) => {
+            vi.mocked(redisClientSubMock.on as any).mockImplementation((event: any, cb: any) => {
                 if (event === 'message') {
                     onMessageHandler = cb
                 }
             })
 
-            const logger = new LoggerMock()
+            const logger = mock<Logger>()
             const pubSubProvider = new PubSubProvider(config, logger)
 
-            redisClientSubMock.subscribe.mockResolvedValue(null)
+            vi.mocked(redisClientSubMock.subscribe).mockResolvedValue(null)
 
             await pubSubProvider.onceChannelMessage(channel, async () => {
                 throw expectedError
@@ -148,24 +137,23 @@ describe('PubSubProvider', () => {
 
     describe('method: `getStatus`', () => {
         it('should return status for both pub/sub', () => {
-            createClient.mockReturnValueOnce(redisClientPubMock)
-            createClient.mockReturnValueOnce(redisClientSubMock)
+            vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientPubMock).mockReturnValueOnce(redisClientSubMock)
 
-            redisClientPubMock.on.mockImplementationOnce((_connectEvent, cb) => {
+            vi.mocked(redisClientPubMock.on as any).mockImplementationOnce((_connectEvent: any, cb: any) => {
                 cb()
             })
-            redisClientPubMock.on.mockImplementationOnce((_errorEvent, cb) => {
+            vi.mocked(redisClientPubMock.on as any).mockImplementationOnce((_errorEvent: any, cb: any) => {
                 cb(new Error('Some error'))
             })
 
-            redisClientSubMock.on.mockImplementationOnce((_connectEvent, cb) => {
+            vi.mocked(redisClientSubMock.on as any).mockImplementationOnce((_connectEvent: any, cb: any) => {
                 cb()
             })
-            redisClientSubMock.on.mockImplementationOnce((_errorEvent, cb) => {
+            vi.mocked(redisClientSubMock.on as any).mockImplementationOnce((_errorEvent: any, cb: any) => {
                 cb(new Error('Some error'))
             })
 
-            const logger = new LoggerMock()
+            const logger = mock<Logger>()
             const pubSubProvider = new PubSubProvider(config, logger)
 
             expect(pubSubProvider.getStatus()).toEqual({ pub: 'ready', sub: 'ready' })

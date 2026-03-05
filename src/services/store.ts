@@ -4,7 +4,7 @@ import { ServiceUnavailableError } from '@diia-inhouse/errors'
 import { HealthCheckResult, HttpStatusCode, Logger, OnDestroy, OnHealthCheck } from '@diia-inhouse/types'
 
 import { RedisConfig, RedisMode, RedisStatusValue, StoreStatus } from '../interfaces/redis'
-import { SetValueOptions, StoreStatusResult, TaggedStoreValue, TagsConfig } from '../interfaces/store'
+import { SetValueOptions, StoreStatusResult, TaggedStoreValue, TagsConfig, ThrottleResult } from '../interfaces/store'
 import { RedisService } from './redis'
 
 export class StoreService implements OnHealthCheck, OnDestroy {
@@ -193,6 +193,18 @@ export class StoreService implements OnHealthCheck, OnDestroy {
         }
 
         return await this.clientRW.set(this.tagsKey, JSON.stringify(tagsConfig))
+    }
+
+    async throttle(key: string, maxBurst: number, rate: number, periodSec: number, quantity = 1): Promise<ThrottleResult> {
+        const result = (await this.clientRW.call('CL.THROTTLE', key, maxBurst, rate, periodSec, quantity)) as number[]
+
+        return {
+            limited: result[0] === 1,
+            totalLimit: result[1],
+            remaining: result[2],
+            retryAfterSec: result[3],
+            resetAfterSec: result[4],
+        }
     }
 
     async flushDb(): Promise<'OK'> {

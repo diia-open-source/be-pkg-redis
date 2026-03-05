@@ -22,4 +22,12 @@ export interface SetValueOptions {
     tags?: string[]
 }
 
+export interface ThrottleResult {
+    limited: boolean
+    totalLimit: number
+    remaining: number
+    retryAfterSec: number
+    resetAfterSec: number
+}
+
 export type StoreStatusResult = { store: StoreStatus }

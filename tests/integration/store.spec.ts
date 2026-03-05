@@ -139,6 +139,40 @@ describe(`${StoreService.name} service`, () => {
         })
     })
 
+    describe('throttle', () => {
+        it('should allow requests within the limit', async () => {
+            const result = await store.throttle('throttle:test:allow', 5, 10, 60)
+
+            expect(result.limited).toBe(false)
+            expect(result.totalLimit).toBe(6)
+            expect(result.remaining).toBeGreaterThanOrEqual(0)
+            expect(result.retryAfterSec).toBe(-1)
+            expect(result.resetAfterSec).toBeGreaterThanOrEqual(0)
+        })
+
+        it('should block requests exceeding the limit', async () => {
+            const key = 'throttle:test:block'
+            const maxBurst = 2
+
+            for (let i = 0; i <= maxBurst; i++) {
+                await store.throttle(key, maxBurst, 1, 60)
+            }
+
+            const result = await store.throttle(key, maxBurst, 1, 60)
+
+            expect(result.limited).toBe(true)
+            expect(result.remaining).toBe(0)
+            expect(result.retryAfterSec).toBeGreaterThan(0)
+        })
+
+        it('should use custom quantity', async () => {
+            const result = await store.throttle('throttle:test:quantity', 5, 10, 60, 3)
+
+            expect(result.limited).toBe(false)
+            expect(result.remaining).toBe(3)
+        })
+    })
+
     describe('Operations with tagged values', () => {
         it('fails to get untagged value', async () => {
             await store.set(key, value)

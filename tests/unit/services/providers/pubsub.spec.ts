@@ -44,7 +44,7 @@ describe('PubSubProvider', () => {
             await pubSubProvider.unsubscribe(channel)
 
             expect(logger.error).toHaveBeenCalledWith(`Could not find a message handler for the channel ${channel}`)
-            expect(logger.info).toHaveBeenCalledWith('Redis READ-ONLY sub connection open', { sentinels: config.readOnly.sentinels })
+            expect(logger.info).toHaveBeenCalledWith('Redis READ-WRITE sub connection open', { sentinels: config.readWrite.sentinels })
         })
     })
 

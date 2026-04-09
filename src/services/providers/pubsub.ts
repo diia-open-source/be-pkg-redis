@@ -16,12 +16,12 @@ export class PubSubProvider implements PubSubServiceProvider {
     private readonly handlerByChannel: Record<string, MessageHandler> = {}
 
     constructor(
-        { readWrite, readOnly }: RedisConfig,
+        { readWrite }: RedisConfig,
 
         private readonly logger: Logger,
     ) {
         this.pub = RedisService.createClient({ ...readWrite, redisMode: RedisMode.ReadWrite }, this.logger)
-        this.sub = RedisService.createClient({ ...readOnly, redisMode: RedisMode.ReadOnly, autoResubscribe: true }, this.logger)
+        this.sub = RedisService.createClient({ ...readWrite, redisMode: RedisMode.ReadWrite, autoResubscribe: true }, this.logger)
 
         this.pub.on('connect', () => {
             const { host, port, sentinels } = readWrite
@@ -34,13 +34,13 @@ export class PubSubProvider implements PubSubServiceProvider {
         })
 
         this.sub.on('connect', () => {
-            const { host, port, sentinels } = readOnly
+            const { host, port, sentinels } = readWrite
 
-            this.logger.info('Redis READ-ONLY sub connection open', { host, port, sentinels })
+            this.logger.info('Redis READ-WRITE sub connection open', { host, port, sentinels })
         })
 
         this.sub.on('error', (err: Error) => {
-            this.logger.error('Redis READ-ONLY sub connection error ', { err })
+            this.logger.error('Redis READ-WRITE sub connection error ', { err })
         })
 
         this.sub.on('message', async (channel: string, message: string) => {

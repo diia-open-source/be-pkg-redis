@@ -1,6 +1,6 @@
 {
     "name": "@diia-inhouse/redis",
-    "version": "2.30.14",
+    "version": "2.30.15",
     "description": "Redis services - redlock, pubsub, cache and store",
     "main": "dist/index.js",
     "types": "dist/types/index.d.ts",
@@ -42,7 +42,7 @@
     "devDependencies": {
         "@diia-inhouse/configs": "6.1.1",
         "@diia-inhouse/diia-logger": "3.20.6",
-        "@diia-inhouse/env": "2.8.20",
+        "@diia-inhouse/env": "2.8.21",
         "@diia-inhouse/errors": "1.18.19",
         "@diia-inhouse/eslint-config": "8.8.0",
         "@diia-inhouse/test": "7.3.18",

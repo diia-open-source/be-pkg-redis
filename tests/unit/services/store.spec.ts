@@ -11,32 +11,32 @@ import { generateUuid } from '../../mocks/randomData'
 import { config } from '../../mocks/services/store'
 
 const redisClientRoMock = {
-    on: vi.fn(),
-    get: vi.fn(),
-    keys: vi.fn(),
-    mget: vi.fn(),
-    hget: vi.fn(),
-    hvals: vi.fn(),
-    hscan: vi.fn(),
-    scan: vi.fn(),
-    hgetall: vi.fn(),
-    hlen: vi.fn(),
-    lrange: vi.fn(),
-    pttl: vi.fn(),
+    on: vi.fn<() => any>(),
+    get: vi.fn<() => any>(),
+    keys: vi.fn<() => any>(),
+    mget: vi.fn<() => any>(),
+    hget: vi.fn<() => any>(),
+    hvals: vi.fn<() => any>(),
+    hscan: vi.fn<() => any>(),
+    scan: vi.fn<() => any>(),
+    hgetall: vi.fn<() => any>(),
+    hlen: vi.fn<() => any>(),
+    lrange: vi.fn<() => any>(),
+    pttl: vi.fn<() => any>(),
     status: 'ready',
 } as any
 
 const redisClientRwMock = {
-    on: vi.fn(),
-    set: vi.fn(),
-    hset: vi.fn(),
-    lpush: vi.fn(),
-    expire: vi.fn(),
-    incrby: vi.fn(),
-    pexpire: vi.fn(),
-    del: vi.fn(),
-    hdel: vi.fn(),
-    flushdb: vi.fn(),
+    on: vi.fn<() => any>(),
+    set: vi.fn<() => any>(),
+    hset: vi.fn<() => any>(),
+    lpush: vi.fn<() => any>(),
+    expire: vi.fn<() => any>(),
+    incrby: vi.fn<() => any>(),
+    pexpire: vi.fn<() => any>(),
+    del: vi.fn<() => any>(),
+    hdel: vi.fn<() => any>(),
+    flushdb: vi.fn<() => any>(),
     status: 'ready',
 } as any
 
@@ -58,21 +58,23 @@ describe('StoreService', () => {
 
             vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
 
-            vi.mocked(redisClientRoMock.on as any).mockImplementationOnce((_connectEvent: any, cb: any) => {
+            vi.mocked(redisClientRoMock.on).mockImplementationOnce((_connectEvent: any, cb: any) => {
                 cb()
             })
-            vi.mocked(redisClientRoMock.on as any).mockImplementationOnce((_errorEvent: any, cb: any) => {
+            vi.mocked(redisClientRoMock.on).mockImplementationOnce((_errorEvent: any, cb: any) => {
                 cb(connError)
             })
 
-            vi.mocked(redisClientRwMock.on as any).mockImplementationOnce((_connectEvent: any, cb: any) => {
+            vi.mocked(redisClientRwMock.on).mockImplementationOnce((_connectEvent: any, cb: any) => {
                 cb()
             })
-            vi.mocked(redisClientRwMock.on as any).mockImplementationOnce((_errorEvent: any, cb: any) => {
+            vi.mocked(redisClientRwMock.on).mockImplementationOnce((_errorEvent: any, cb: any) => {
                 cb(connError)
             })
 
-            new StoreService(config, logger)
+            const service = new StoreService(config, logger)
+
+            expect(service).toBeDefined()
 
             expect(logger.info).toHaveBeenCalledWith('Store READ-WRITE connection open')
             expect(logger.error).toHaveBeenCalledWith('Store READ-WRITE connection error ', { err: connError })
@@ -409,7 +411,7 @@ describe('StoreService', () => {
         it('should just return item from cache', async () => {
             const key = generateUuid()
             const expectedValue = 'value'
-            const closure = vi.fn()
+            const closure = vi.fn<() => any>()
 
             vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRoMock.get.mockResolvedValue(expectedValue)
@@ -424,7 +426,7 @@ describe('StoreService', () => {
 
         it.each(['value', ''])('should set item `%s` received from closure in store', async (expectedValue) => {
             const key = generateUuid()
-            const closure = vi.fn()
+            const closure = vi.fn<() => any>()
 
             vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
             redisClientRoMock.get.mockResolvedValue(null)

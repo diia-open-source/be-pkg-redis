@@ -1,25 +1,32 @@
 {
     "name": "@diia-inhouse/redis",
-    "version": "2.30.21",
+    "version": "3.1.0",
+    "type": "module",
     "description": "Redis services - redlock, pubsub, cache and store",
     "main": "dist/index.js",
-    "types": "dist/types/index.d.ts",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+        },
+        "./package.json": "./package.json"
+    },
     "repository": "https://github.com/diia-open-source/be-pkg-redis",
     "author": "Diia",
-    "license": "SEE LICENCE IN LICENCE.md",
     "files": [
         "dist"
     ],
     "engines": {
-        "node": ">=22"
+        "node": ">=24"
     },
     "scripts": {
         "prebuild": "rimraf dist",
-        "build": "tsc",
+        "build": "tsdown",
         "semantic-release": "semantic-release",
         "start": "npm run build && node dist/index.js",
-        "lint": "eslint . && prettier --check .",
-        "lint-fix": "eslint . --fix && prettier --write .",
+        "lint": "oxlint && oxfmt --check .",
+        "lint-fix": "oxlint --fix && oxfmt .",
         "lint:lockfile": "lockfile-lint --path package-lock.json --allowed-hosts registry.npmjs.org --validate-https",
         "prepare": "npm run build",
         "test": "vitest run",
@@ -30,37 +37,39 @@
         "@babel/traverse": "7.25.9"
     },
     "dependencies": {
-        "ioredis": "5.6.1",
-        "redis-semaphore": "5.6.2"
+        "ioredis": "5.10.1",
+        "redis-semaphore": "5.7.0"
     },
     "peerDependencies": {
-        "@diia-inhouse/env": ">=1.2.0",
-        "@diia-inhouse/errors": ">=1.4.2",
-        "@diia-inhouse/types": ">=3.50.0",
-        "@diia-inhouse/validators": ">=1.6.1"
+        "@diia-inhouse/env": ">=3.0.0",
+        "@diia-inhouse/errors": ">=2.0.0",
+        "@diia-inhouse/types": ">=13.0.0",
+        "@diia-inhouse/validators": ">=2.0.0"
     },
     "devDependencies": {
-        "@diia-inhouse/configs": "6.1.1",
-        "@diia-inhouse/diia-logger": "3.20.12",
-        "@diia-inhouse/env": "2.8.24",
-        "@diia-inhouse/errors": "1.18.23",
-        "@diia-inhouse/eslint-config": "8.8.2",
-        "@diia-inhouse/test": "7.3.23",
-        "@diia-inhouse/types": "11.7.0",
-        "@diia-inhouse/validators": "1.28.34",
-        "@types/node": "25.3.3",
-        "@vitest/coverage-v8": "4.0.18",
-        "@vitest/ui": "4.0.18",
-        "eslint": "9.39.3",
+        "@diia-inhouse/configs": "7.0.0",
+        "@diia-inhouse/diia-logger": "4.2.4",
+        "@diia-inhouse/env": "3.3.0",
+        "@diia-inhouse/errors": "2.1.1",
+        "@diia-inhouse/oxc-config": "1.10.0",
+        "@diia-inhouse/test": "8.2.1",
+        "@diia-inhouse/types": "13.2.0",
+        "@diia-inhouse/validators": "2.2.2",
+        "@types/node": "25.6.2",
+        "@vitest/coverage-v8": "4.1.5",
+        "@vitest/ui": "4.1.5",
         "eslint-plugin-prettier": "5.5.5",
-        "lockfile-lint": "4.14.1",
+        "lockfile-lint": "5.0.0",
         "madge": "8.0.0",
-        "prettier": "3.8.1",
+        "oxfmt": "0.48.0",
+        "oxlint": "1.63.0",
+        "oxlint-tsgolint": "0.22.1",
         "rimraf": "6.1.3",
-        "semantic-release": "24.2.9",
+        "semantic-release": "25.0.3",
+        "tsdown": "0.22.0",
         "typescript": "5.9.3",
-        "vitest": "4.0.18",
-        "vitest-mock-extended": "3.1.0"
+        "vitest": "4.1.5",
+        "vitest-mock-extended": "4.0.0"
     },
     "release": {
         "extends": "@diia-inhouse/configs/dist/semantic-release/package"
@@ -68,8 +77,8 @@
     "commitlint": {
         "extends": "@diia-inhouse/configs/dist/commitlint"
     },
-    "prettier": "@diia-inhouse/eslint-config/prettier",
     "madge": {
         "tsConfig": "./tsconfig.json"
-    }
+    },
+    "license": "SEE LICENCE IN LICENCE.md"
 }

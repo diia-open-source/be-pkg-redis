@@ -1,7 +1,8 @@
-import Redis, { RedisOptions as IoRedisOptions } from 'ioredis'
-import { RedisOptions } from 'src/interfaces'
+import { Redis, RedisOptions as IoRedisOptions } from 'ioredis'
 
 import { DurationMs, Logger } from '@diia-inhouse/types'
+
+import { RedisOptions } from '../interfaces/index.js'
 
 export const RedisService = {
     createClient(extendedRedisOptions: RedisOptions, logger: Logger): Redis {

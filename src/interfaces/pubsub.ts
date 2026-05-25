@@ -1,4 +1,4 @@
-import { RedisStatus } from './redis'
+import { RedisStatus } from './redis.js'
 
 export interface PubSubStatus {
     pub: RedisStatus

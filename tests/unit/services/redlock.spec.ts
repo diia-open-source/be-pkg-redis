@@ -12,16 +12,16 @@ import { config } from '../../mocks/services/redlock'
 vi.mock('redis-semaphore', () => ({
     RedlockMutex: class RedlockMutexMock {
         acquire(): unknown {
-            return vi.fn()
+            return vi.fn<() => any>()
         }
     },
 }))
 
 const redisClientRwMock = {
-    on: vi.fn(),
-    set: vi.fn(),
-    expire: vi.fn(),
-    del: vi.fn(),
+    on: vi.fn<() => any>(),
+    set: vi.fn<() => any>(),
+    expire: vi.fn<() => any>(),
+    del: vi.fn<() => any>(),
     status: 'ready',
 } as unknown as Redis
 
@@ -42,7 +42,9 @@ describe('RedlockService', () => {
                 cb(expectedRedisError)
             })
 
-            new RedlockService(config, logger)
+            const service = new RedlockService(config, logger)
+
+            expect(service).toBeDefined()
 
             expect(logger.info).toHaveBeenCalledWith('Redis REDLOCK READ-WRITE connection open', { sentinels: config.readWrite.sentinels })
             expect(logger.error).toHaveBeenCalledWith('Redis REDLOCK READ-WRITE connection error ', { err: expectedRedisError })

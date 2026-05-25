@@ -29,7 +29,7 @@ describe('RedisService', () => {
     describe('method: `createClient`', () => {
         it('should successfully create redis client with logger', () => {
             // Act
-            const client = RedisService.createClient({}, loggerMock as Logger)
+            const client = RedisService.createClient({}, loggerMock)
 
             // Assert
             expect(client.options).toBeDefined()

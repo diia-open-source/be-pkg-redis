@@ -1,11 +1,11 @@
-import Redis from 'ioredis'
+import { Redis } from 'ioredis'
 
 import { ServiceUnavailableError } from '@diia-inhouse/errors'
 import { HealthCheckResult, HttpStatusCode, Logger, OnDestroy, OnHealthCheck } from '@diia-inhouse/types'
 
-import { RedisConfig, RedisMode, RedisStatusValue, StoreStatus } from '../interfaces/redis'
-import { SetValueOptions, StoreStatusResult, TaggedStoreValue, TagsConfig, ThrottleResult } from '../interfaces/store'
-import { RedisService } from './redis'
+import { RedisConfig, RedisMode, RedisStatusValue, StoreStatus } from '../interfaces/redis.js'
+import { SetValueOptions, StoreStatusResult, TaggedStoreValue, TagsConfig, ThrottleResult } from '../interfaces/store.js'
+import { RedisService } from './redis.js'
 
 export class StoreService implements OnHealthCheck, OnDestroy {
     private clientRW: Redis
@@ -226,7 +226,6 @@ export class StoreService implements OnHealthCheck, OnDestroy {
         const tagTimestamps = Object.entries(tagsConfig)
             .filter(([tag]) => tags.includes(tag))
             .map(([, tagTimestamp]) => tagTimestamp)
-            // eslint-disable-next-line unicorn/prefer-native-coercion-functions
             .filter((tagTimestamp): tagTimestamp is number => Boolean(tagTimestamp))
 
         const timestamp = tagTimestamps.length > 0 ? Math.max(...tagTimestamps) : 0

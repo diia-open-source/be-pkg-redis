@@ -1,4 +1,4 @@
-import { StoreStatus } from './redis'
+import { StoreStatus } from './redis.js'
 
 export type TagsConfig = {
     [tag in string]?: number

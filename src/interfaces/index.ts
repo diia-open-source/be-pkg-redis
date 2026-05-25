@@ -1,7 +1,7 @@
-export * from './pubsub'
+export * from './pubsub.js'
 
-export * from './redis'
+export * from './redis.js'
 
-export * from './mutex'
+export * from './mutex.js'
 
-export * from './store'
+export * from './store.js'

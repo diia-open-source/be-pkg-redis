@@ -1,8 +1,8 @@
 import { HealthCheckResult, HttpStatusCode, Logger, OnDestroy, OnHealthCheck } from '@diia-inhouse/types'
 
-import { MessageHandler, PubSubStatus, PubSubStatusResult } from '../interfaces/pubsub'
-import { RedisConfig, RedisStatusValue } from '../interfaces/redis'
-import { PubSubProvider } from './providers/pubsub'
+import { MessageHandler, PubSubStatus, PubSubStatusResult } from '../interfaces/pubsub.js'
+import { RedisConfig, RedisStatusValue } from '../interfaces/redis.js'
+import { PubSubProvider } from './providers/pubsub.js'
 
 export class PubSubService implements OnHealthCheck, OnDestroy {
     private readonly provider: PubSubProvider

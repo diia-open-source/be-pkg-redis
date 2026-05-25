@@ -1,10 +1,10 @@
-import Redis from 'ioredis'
+import { Redis } from 'ioredis'
 
 import { Logger } from '@diia-inhouse/types'
 
-import { MessageHandler, PubSubServiceProvider, PubSubStatus } from '../../interfaces/pubsub'
-import { RedisConfig, RedisMode } from '../../interfaces/redis'
-import { RedisService } from '../redis'
+import { MessageHandler, PubSubServiceProvider, PubSubStatus } from '../../interfaces/pubsub.js'
+import { RedisConfig, RedisMode } from '../../interfaces/redis.js'
+import { RedisService } from '../redis.js'
 
 export class PubSubProvider implements PubSubServiceProvider {
     private pub: Redis

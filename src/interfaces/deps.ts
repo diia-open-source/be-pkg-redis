@@ -1,4 +1,4 @@
-import { PubSubService, RedlockService, StoreService } from '../services'
+import { PubSubService, RedlockService, StoreService } from '../services/index.js'
 
 export type RedisDeps = {
     pubsub?: PubSubService

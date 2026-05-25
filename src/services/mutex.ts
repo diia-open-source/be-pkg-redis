@@ -1,11 +1,11 @@
-import Redis from 'ioredis'
+import { Redis } from 'ioredis'
 import { RedlockMutex } from 'redis-semaphore'
 
 import { HealthCheckResult, HttpStatusCode, Logger, OnDestroy, OnHealthCheck } from '@diia-inhouse/types'
 
-import { LockOptions, MutexStatusResult } from '../interfaces'
-import { RedisConfig, RedisMode, RedisStatusValue } from '../interfaces/redis'
-import { RedisService } from './redis'
+import { LockOptions, MutexStatusResult } from '../interfaces/index.js'
+import { RedisConfig, RedisMode, RedisStatusValue } from '../interfaces/redis.js'
+import { RedisService } from './redis.js'
 
 export class RedlockService implements OnHealthCheck, OnDestroy {
     private clientRW: Redis

@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable unicorn/consistent-function-scoping */
-
 import { Redis } from 'ioredis'
 import { mock } from 'vitest-mock-extended'
 
@@ -12,15 +11,15 @@ import { generateUuid } from '../../../mocks/randomData'
 import { config } from '../../../mocks/services/providers/pubsub'
 
 const redisClientSubMock = {
-    on: vi.fn(),
-    subscribe: vi.fn(),
-    unsubscribe: vi.fn(),
+    on: vi.fn<() => any>(),
+    subscribe: vi.fn<() => any>(),
+    unsubscribe: vi.fn<() => any>(),
     status: 'ready',
 } as unknown as Redis
 
 const redisClientPubMock = {
-    on: vi.fn(),
-    publish: vi.fn(),
+    on: vi.fn<() => any>(),
+    publish: vi.fn<() => any>(),
     status: 'ready',
 } as unknown as Redis
 
@@ -64,18 +63,22 @@ describe('PubSubProvider', () => {
     })
 
     describe('method: `onceChannelMessage`', () => {
+        const captureMessageHandler =
+            (ref: { handler: CallableFunction }): ((event: any, cb: any) => void) =>
+            (event, cb) => {
+                const isMessage = event === 'message'
+
+                ref.handler = isMessage ? cb : ref.handler
+            }
+
         it('should successfully register handler for channel and then handle received message', async () => {
-            let onMessageHandler: CallableFunction = async () => {}
+            const handlerRef: { handler: CallableFunction } = { handler: async () => {} }
 
             const channel = generateUuid()
 
             vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientPubMock).mockReturnValueOnce(redisClientSubMock)
 
-            vi.mocked(redisClientSubMock.on as any).mockImplementation((event: any, cb: any) => {
-                if (event === 'message') {
-                    onMessageHandler = cb
-                }
-            })
+            vi.mocked(redisClientSubMock.on as any).mockImplementation(captureMessageHandler(handlerRef))
 
             const logger = mock<Logger>()
             const pubSubProvider = new PubSubProvider(config, logger)
@@ -86,7 +89,7 @@ describe('PubSubProvider', () => {
                 expect(message).toBe('{}')
             })
 
-            await onMessageHandler(channel, '{}')
+            await handlerRef.handler(channel, '{}')
         })
 
         it('should fail to register handler for channel in case it was already registered', async () => {
@@ -107,18 +110,14 @@ describe('PubSubProvider', () => {
         })
 
         it('should successfully register handler for channel and then only log error in case handler rejects', async () => {
-            let onMessageHandler: CallableFunction = async () => {}
+            const handlerRef: { handler: CallableFunction } = { handler: async () => {} }
 
             const channel = generateUuid()
             const expectedError = new Error('Unable to handle message')
 
             vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientPubMock).mockReturnValueOnce(redisClientSubMock)
 
-            vi.mocked(redisClientSubMock.on as any).mockImplementation((event: any, cb: any) => {
-                if (event === 'message') {
-                    onMessageHandler = cb
-                }
-            })
+            vi.mocked(redisClientSubMock.on as any).mockImplementation(captureMessageHandler(handlerRef))
 
             const logger = mock<Logger>()
             const pubSubProvider = new PubSubProvider(config, logger)
@@ -129,7 +128,7 @@ describe('PubSubProvider', () => {
                 throw expectedError
             })
 
-            await onMessageHandler(channel, '{}')
+            await handlerRef.handler(channel, '{}')
 
             expect(logger.error).toHaveBeenCalledWith(`Failed to handle message from the channel ${channel}`, { err: expectedError })
         })

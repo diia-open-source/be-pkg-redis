@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
+import { setTimeout as sleep } from 'node:timers/promises'
 
-import DiiaLogger from '@diia-inhouse/diia-logger'
+import { DiiaLogger } from '@diia-inhouse/diia-logger'
 import { ServiceUnavailableError } from '@diia-inhouse/errors'
 
 import { StoreService } from '../../src/index'
@@ -67,7 +68,7 @@ describe(`${StoreService.name} service`, () => {
                 // Act
                 await store.set(key, value, { ttl })
 
-                await new Promise((resolve) => setTimeout(resolve, ttl + 10))
+                await sleep(ttl + 10)
 
                 const res = await store.get(key)
 
@@ -124,7 +125,7 @@ describe(`${StoreService.name} service`, () => {
 
             it('should return value from cache if key exists', async () => {
                 // Arrange
-                const randomValue = randomUUID().toString()
+                const randomValue = randomUUID()
 
                 await store.set(key, randomValue)
 
@@ -151,14 +152,14 @@ describe(`${StoreService.name} service`, () => {
         })
 
         it('should block requests exceeding the limit', async () => {
-            const key = 'throttle:test:block'
+            const throttleKey = 'throttle:test:block'
             const maxBurst = 2
 
             for (let i = 0; i <= maxBurst; i++) {
-                await store.throttle(key, maxBurst, 1, 60)
+                await store.throttle(throttleKey, maxBurst, 1, 60)
             }
 
-            const result = await store.throttle(key, maxBurst, 1, 60)
+            const result = await store.throttle(throttleKey, maxBurst, 1, 60)
 
             expect(result.limited).toBe(true)
             expect(result.remaining).toBe(0)

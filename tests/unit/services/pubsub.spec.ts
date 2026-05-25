@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable unicorn/consistent-function-scoping */
 import { mock } from 'vitest-mock-extended'
 
@@ -12,23 +13,23 @@ import { config } from '../../mocks/services/pubsub'
 vi.mock('../../../src/services/providers/pubsub', () => ({
     PubSubProvider: class PubSubProviderMock {
         unsubscribe(): unknown {
-            return vi.fn()
+            return vi.fn<() => any>()
         }
 
         publish(): unknown {
-            return vi.fn()
+            return vi.fn<() => any>()
         }
 
         onceChannelMessage(): unknown {
-            return vi.fn()
+            return vi.fn<() => any>()
         }
 
         onChannelMessage(): unknown {
-            return vi.fn()
+            return vi.fn<() => any>()
         }
 
         getStatus(): unknown {
-            return vi.fn()
+            return vi.fn<() => any>()
         }
     },
 }))

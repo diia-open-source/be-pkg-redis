@@ -195,6 +195,33 @@ export class StoreService implements OnHealthCheck, OnDestroy {
         return await this.clientRW.set(this.tagsKey, JSON.stringify(tagsConfig))
     }
 
+    /**
+     * Applies a leaky bucket rate limit to the given key via the `CL.THROTTLE` command.
+     *
+     * The call is atomic: it consumes `quantity` tokens and reports the resulting bucket state in one round trip.
+     * Tokens are refilled continuously at `rate / periodSec`, so bursts are smoothed out
+     * and there are no edge cases at fixed-window boundaries.
+     *
+     * @param key - Identifier to rate limit against, e.g. a user id or an IP address.
+     * @param maxBurst - Extra tokens allowed on top of the steady rate, i.e. how large a burst may be.
+     * The bucket therefore holds `maxBurst + 1` tokens.
+     * @param rate - Number of tokens refilled per `periodSec`.
+     * @param periodSec - Length of the refill period in seconds.
+     * @param quantity - Number of tokens the call consumes.
+     * @returns Whether the action is limited plus the rate limit headers state.
+     *
+     * @example
+     * ```ts
+     * // 10 requests per minute, tolerating a burst of 5 extra requests
+     * const { limited, retryAfterSec } = await store.throttle(`login:${userId}`, 5, 10, 60)
+     * if (limited) {
+     *     res.setHeader('Retry-After', String(retryAfterSec))
+     *     res.writeHead(HttpStatusCode.TOO_MANY_REQUESTS)
+     * }
+     * ```
+     *
+     * @see {@link https://www.dragonflydb.io/docs/command-reference/strings/cl.throttle | Dragonfly CL.THROTTLE}
+     */
     async throttle(key: string, maxBurst: number, rate: number, periodSec: number, quantity = 1): Promise<ThrottleResult> {
         const result = (await this.clientRW.call('CL.THROTTLE', key, maxBurst, rate, periodSec, quantity)) as number[]
 

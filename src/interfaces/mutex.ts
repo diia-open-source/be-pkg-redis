@@ -12,4 +12,9 @@ export type LockOptions = {
      * @defaultValue 500
      */
     retryInterval?: number
+    /**
+     * Maximum time in milliseconds to keep trying to acquire a locked resource before giving up
+     * @defaultValue ttl * 2
+     */
+    acquireTimeout?: number
 }

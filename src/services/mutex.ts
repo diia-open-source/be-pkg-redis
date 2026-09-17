@@ -44,12 +44,26 @@ export class RedlockService implements OnHealthCheck, OnDestroy {
         await this.clientRW.quit()
     }
 
-    async lock(resource: string, ttl = 60000, { retryInterval = 500 }: LockOptions = {}): Promise<RedlockMutex> {
-        this.logger.info(`Start LOCK resource [${resource}] for ttl [${ttl}]ms`)
-        const mutex = new RedlockMutex([this.clientRW], resource, { lockTimeout: ttl, acquireTimeout: ttl * 2, retryInterval })
+    async lock(resource: string, ttl = 60000, options: LockOptions = {}): Promise<RedlockMutex> {
+        const mutex = this.createMutex(resource, ttl, options)
 
         await mutex.acquire()
 
         return mutex
+    }
+
+    /**
+     * Same as `lock`, but resolves with `null` instead of throwing when the resource is not acquired within `acquireTimeout`
+     */
+    async tryLock(resource: string, ttl = 60000, options: LockOptions = {}): Promise<RedlockMutex | null> {
+        const mutex = this.createMutex(resource, ttl, options)
+
+        return (await mutex.tryAcquire()) ? mutex : null
+    }
+
+    private createMutex(resource: string, ttl: number, { retryInterval = 500, acquireTimeout = ttl * 2 }: LockOptions): RedlockMutex {
+        this.logger.info(`Start LOCK resource [${resource}] for ttl [${ttl}]ms`)
+
+        return new RedlockMutex([this.clientRW], resource, { lockTimeout: ttl, acquireTimeout, retryInterval })
     }
 }

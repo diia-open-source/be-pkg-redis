@@ -1,6 +1,6 @@
 {
     "name": "@diia-inhouse/redis",
-    "version": "3.2.36",
+    "version": "3.2.37",
     "type": "module",
     "description": "Redis services - redlock, pubsub, cache and store",
     "main": "dist/index.js",
@@ -49,11 +49,11 @@
     "devDependencies": {
         "@diia-inhouse/configs": "7.2.3",
         "@diia-inhouse/diia-logger": "4.7.33",
-        "@diia-inhouse/env": "3.3.96",
+        "@diia-inhouse/env": "3.3.98",
         "@diia-inhouse/errors": "2.3.32",
         "@diia-inhouse/oxc-config": "3.2.0",
-        "@diia-inhouse/test": "8.3.46",
-        "@diia-inhouse/types": "14.9.2",
+        "@diia-inhouse/test": "8.4.0",
+        "@diia-inhouse/types": "14.10.0",
         "@diia-inhouse/validators": "2.2.124",
         "@types/node": "25.6.2",
         "@vitest/coverage-v8": "4.1.11",

@@ -4,6 +4,9 @@ import { DurationMs, Logger } from '@diia-inhouse/types'
 
 import { RedisOptions } from '../interfaces/index.js'
 
+/** Once the retry budget is exhausted, the "connection failed" error is logged on the first attempt past it and then on every Nth attempt. */
+const EXHAUSTED_RETRY_LOG_INTERVAL = 20
+
 export const RedisService = {
     createClient(extendedRedisOptions: RedisOptions, logger: Logger): Redis {
         const {
@@ -33,17 +36,21 @@ export const RedisService = {
                 return false
             },
             retryStrategy: (attempts) => {
+                const backoff = Math.min(initialRetryDelay * Math.pow(2, attempts - 1), maxRetryDelay)
+                // nosemgrep: nodejs_scan.javascript-crypto-rule-node_insecure_random_generator
+                const delay = Math.round(backoff + Math.random() * backoff)
+
                 if (attempts > maxRetryAttempts) {
-                    logger.error(`Redis connection failed after ${maxRetryAttempts} attempts. Shutting down connection attempts.`, {
-                        host,
-                        port,
-                        redisMode,
-                    })
+                    if (attempts === maxRetryAttempts + 1 || attempts % EXHAUSTED_RETRY_LOG_INTERVAL === 0) {
+                        logger.error(`Redis connection failed after ${attempts} attempts. Retrying in ${delay}ms...`, {
+                            host,
+                            port,
+                            redisMode,
+                        })
+                    }
 
-                    return null // Stop retrying (null instead of false)
+                    return delay
                 }
-
-                const delay = Math.min(initialRetryDelay * Math.pow(2, attempts - 1), maxRetryDelay)
 
                 logger.debug(`Redis connection attempt ${attempts} failed. Retrying in ${delay}ms...`, {
                     host,

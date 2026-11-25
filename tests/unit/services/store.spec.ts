@@ -5,7 +5,7 @@ import Logger from '@diia-inhouse/diia-logger'
 import { ServiceUnavailableError } from '@diia-inhouse/errors'
 import { HttpStatusCode } from '@diia-inhouse/types'
 
-import { SetValueOptions, StoreService, StoreStatus, TaggedStoreValue, TagsConfig } from '../../../src/index'
+import { SetValueOptions, StoreService } from '../../../src/index'
 import { RedisService } from '../../../src/services/redis'
 import { generateUuid } from '../../mocks/randomData'
 import { config } from '../../mocks/services/store'
@@ -215,25 +215,19 @@ describe('StoreService', () => {
     describe('method: `getUsingTags`', () => {
         it.each([
             ['cached value is null', generateUuid(), null, null, null],
-            [
-                'there are no tags',
-                generateUuid(),
-                JSON.stringify({ data: 'value', tags: [], timestamp: 1800 } as TaggedStoreValue),
-                null,
-                'value',
-            ],
+            ['there are no tags', generateUuid(), JSON.stringify({ data: 'value', tags: [], timestamp: 1800 }), null, 'value'],
             [
                 'invalid tags',
                 generateUuid(),
-                JSON.stringify({ data: 'value', tags: ['publicService'], timestamp: 1800 } as TaggedStoreValue),
-                JSON.stringify({ publicService: 1900 } as TagsConfig),
+                JSON.stringify({ data: 'value', tags: ['publicService'], timestamp: 1800 }),
+                JSON.stringify({ publicService: 1900 }),
                 null,
             ],
             [
                 'valid tags',
                 generateUuid(),
-                JSON.stringify({ data: 'value', tags: ['publicService'], timestamp: 1800 } as TaggedStoreValue),
-                JSON.stringify({ publicService: 1800 } as TagsConfig),
+                JSON.stringify({ data: 'value', tags: ['publicService'], timestamp: 1800 }),
+                JSON.stringify({ publicService: 1800 }),
                 'value',
             ],
         ])(
@@ -332,7 +326,7 @@ describe('StoreService', () => {
             const options: SetValueOptions = { tags: ['publicService'], ttl: 1800 }
 
             vi.spyOn(RedisService, 'createClient').mockReturnValueOnce(redisClientRwMock).mockReturnValueOnce(redisClientRoMock)
-            redisClientRoMock.get.mockResolvedValue(JSON.stringify({ publicService: 1800 } as TagsConfig))
+            redisClientRoMock.get.mockResolvedValue(JSON.stringify({ publicService: 1800 }))
             redisClientRwMock.set.mockResolvedValue('OK')
 
             const storeService = new StoreService(config, logger)
@@ -443,17 +437,13 @@ describe('StoreService', () => {
 
     describe('method: `onHealthCheck`', () => {
         it.each([
-            [
-                'OK',
-                ['ready', 'ready'],
-                { status: HttpStatusCode.OK, details: { store: { readOnly: 'ready', readWrite: 'ready' } as StoreStatus } },
-            ],
+            ['OK', ['ready', 'ready'], { status: HttpStatusCode.OK, details: { store: { readOnly: 'ready', readWrite: 'ready' } } }],
             [
                 'SERVICE_UNAVAILABLE',
                 ['connecting', 'ready'],
                 {
                     status: HttpStatusCode.SERVICE_UNAVAILABLE,
-                    details: { store: { readOnly: 'ready', readWrite: 'connecting' } as StoreStatus },
+                    details: { store: { readOnly: 'ready', readWrite: 'connecting' } },
                 },
             ],
         ])('should return health status `%s`', async (_status, [rw, ro], expectedStatus) => {
@@ -469,12 +459,8 @@ describe('StoreService', () => {
 
     describe('method: `bumpTags`', () => {
         it.each([
-            [
-                'tags config exists in store',
-                JSON.stringify({ ['faq']: now } as TagsConfig),
-                JSON.stringify({ ['faq']: now, ['publicService']: now } as TagsConfig),
-            ],
-            ['tags does not exist in store', null, JSON.stringify({ ['publicService']: now } as TagsConfig)],
+            ['tags config exists in store', JSON.stringify({ ['faq']: now }), JSON.stringify({ ['faq']: now, ['publicService']: now })],
+            ['tags does not exist in store', null, JSON.stringify({ ['publicService']: now })],
         ])('should successfully bump tags when %s', async (_msg, tagsConfig: string | null, expectedTagsConfig: string) => {
             const tags: string[] = ['publicService']
 

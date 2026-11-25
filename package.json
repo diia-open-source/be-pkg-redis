@@ -1,8 +1,14 @@
 {
     "name": "@diia-inhouse/redis",
-    "version": "3.2.70",
-    "type": "module",
+    "version": "3.2.74",
     "description": "Redis services - redlock, pubsub, cache and store",
+    "license": "SEE LICENCE IN LICENCE.md",
+    "author": "diia-team",
+    "repository": "https://github.com/diia-open-source/be-pkg-redis",
+    "files": [
+        "dist"
+    ],
+    "type": "module",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "exports": {
@@ -11,14 +17,6 @@
             "default": "./dist/index.js"
         },
         "./package.json": "./package.json"
-    },
-    "repository": "https://github.com/diia-open-source/be-pkg-redis",
-    "author": "Diia",
-    "files": [
-        "dist"
-    ],
-    "engines": {
-        "node": ">=24"
     },
     "scripts": {
         "prebuild": "rimraf dist",
@@ -30,37 +28,28 @@
         "lint:lockfile": "lockfile-lint --path package-lock.json --allowed-hosts registry.npmjs.org --validate-https",
         "prepare": "npm run build",
         "test": "vitest run",
-        "test:watch": "vitest watch",
-        "find-circulars": "madge --circular --extensions ts ./"
+        "test:watch": "vitest watch"
     },
     "dependencies": {
         "ioredis": "5.10.1",
         "redis-semaphore": "5.7.0"
     },
-    "peerDependencies": {
-        "@diia-inhouse/env": ">=3.0.0",
-        "@diia-inhouse/errors": ">=2.0.0",
-        "@diia-inhouse/types": ">=13.0.0",
-        "@diia-inhouse/validators": ">=2.0.0"
-    },
     "devDependencies": {
-        "@diia-inhouse/configs": "7.4.0",
-        "@diia-inhouse/diia-logger": "4.7.64",
-        "@diia-inhouse/env": "3.3.119",
-        "@diia-inhouse/errors": "2.3.49",
-        "@diia-inhouse/oxc-config": "3.2.0",
-        "@diia-inhouse/test": "8.4.14",
+        "@diia-inhouse/configs": "7.5.0",
+        "@diia-inhouse/diia-logger": "4.7.68",
+        "@diia-inhouse/env": "3.3.121",
+        "@diia-inhouse/errors": "2.3.50",
+        "@diia-inhouse/oxc-config": "6.2.2",
+        "@diia-inhouse/test": "8.4.16",
         "@diia-inhouse/types": "14.13.3",
-        "@diia-inhouse/validators": "2.2.145",
+        "@diia-inhouse/validators": "2.3.1",
         "@types/node": "25.6.2",
         "@vitest/coverage-v8": "4.1.11",
         "@vitest/ui": "4.1.11",
-        "eslint-plugin-prettier": "5.5.5",
         "lockfile-lint": "5.0.0",
-        "madge": "8.0.0",
-        "oxfmt": "0.48.0",
-        "oxlint": "1.63.0",
-        "oxlint-tsgolint": "0.22.1",
+        "oxfmt": "0.74.0",
+        "oxlint": "1.89.0",
+        "oxlint-tsgolint": "7.0.2004",
         "rimraf": "6.1.3",
         "semantic-release": "25.0.3",
         "tsdown": "0.22.0",
@@ -68,14 +57,19 @@
         "vitest": "4.1.11",
         "vitest-mock-extended": "4.0.0"
     },
-    "release": {
-        "extends": "@diia-inhouse/configs/dist/semantic-release/package"
+    "peerDependencies": {
+        "@diia-inhouse/env": ">=3.0.0",
+        "@diia-inhouse/errors": ">=2.0.0",
+        "@diia-inhouse/types": ">=13.0.0",
+        "@diia-inhouse/validators": ">=2.0.0"
     },
     "commitlint": {
         "extends": "@diia-inhouse/configs/dist/commitlint"
     },
-    "madge": {
-        "tsConfig": "./tsconfig.json"
+    "release": {
+        "extends": "@diia-inhouse/configs/dist/semantic-release/package"
     },
-    "license": "SEE LICENCE IN LICENCE.md"
+    "engines": {
+        "node": ">=24"
+    }
 }

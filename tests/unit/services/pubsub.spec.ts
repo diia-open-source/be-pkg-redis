@@ -5,7 +5,7 @@ import { mock } from 'vitest-mock-extended'
 import Logger from '@diia-inhouse/diia-logger'
 import { HttpStatusCode } from '@diia-inhouse/types'
 
-import { PubSubService, PubSubStatus, RedisStatusValue } from '../../../src/index'
+import { PubSubService, RedisStatusValue } from '../../../src/index'
 import { PubSubProvider } from '../../../src/services/providers/pubsub'
 import { generateUuid } from '../../mocks/randomData'
 import { config } from '../../mocks/services/pubsub'
@@ -89,14 +89,14 @@ describe('PubSubService', () => {
                 'OK',
                 {
                     status: HttpStatusCode.OK,
-                    details: { pubsub: { pub: RedisStatusValue.Ready, sub: RedisStatusValue.Ready } as PubSubStatus },
+                    details: { pubsub: { pub: RedisStatusValue.Ready, sub: RedisStatusValue.Ready } },
                 },
             ],
             [
                 'SERVICE UNAVAILABLE',
                 {
                     status: HttpStatusCode.SERVICE_UNAVAILABLE,
-                    details: { pubsub: { pub: 'connecting' as RedisStatusValue, sub: RedisStatusValue.Ready } as PubSubStatus },
+                    details: { pubsub: { pub: 'connecting' as RedisStatusValue, sub: RedisStatusValue.Ready } },
                 },
             ],
         ])('should return `%s` status', async (_httpStatus, expectedStatus) => {
